@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "brajam.golden-gate-widgets",
+  "name": "Golden Gate desktop widgets",
+  "version": "1.0.0",
+  "author": "Local",
+  "description": "Desktop calendar, current weather and abstract artwork for Golden Gate",
+  "kinds": ["service"],
+  "entryPoints": { "service": "Widgets.qml" }
+}

@@ -1,0 +1,36 @@
+mode = "light"
+
+# Golden Gate's actual light wallpaper is brushed champagne and slate,
+# with system-blue selections rather than an orange bridge illustration.
+accent = "#267af5"
+selection = "#c6ddfc"
+muted = "#9c9694"
+
+background = "#e8e4e1"
+dark_background = "#d6d1d0"
+darker_background = "#bdb8b9"
+lighter_background = "#f4f1ee"
+
+foreground = "#272630"
+dark_foreground = "#706c71"
+light_foreground = "#44404a"
+bright_foreground = "#151821"
+
+red = "#c3464b"
+yellow = "#926417"
+orange = "#b55e35"
+green = "#317554"
+cyan = "#277688"
+blue = "#267af5"
+magenta = "#8d588e"
+brown = "#85634f"
+
+bright_red = "#aa333f"
+bright_yellow = "#7d5212"
+bright_green = "#266543"
+bright_cyan = "#1d687e"
+bright_blue = "#175ecc"
+bright_magenta = "#783f83"
+
+hyprland_active_border = "#ffffff #aeb7cb 45deg"
+hyprland_inactive_border = "#b5aba9"

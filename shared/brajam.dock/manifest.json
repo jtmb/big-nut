@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "brajam.dock",
+  "name": "Golden Gate dock",
+  "version": "1.0.0",
+  "author": "Omarchy",
+  "description": "Omarchy dock, with optional Golden Gate always-visible glass mode",
+  "kinds": [
+    "service",
+    "menu"
+  ],
+  "entryPoints": {
+    "service": "Dock.qml",
+    "menu": "AppMenu.qml"
+  },
+  "omarchy": { "clonedFrom": "omarchy.dock" }
+}

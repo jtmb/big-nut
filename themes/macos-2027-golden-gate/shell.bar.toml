@@ -1,0 +1,9 @@
+# A light glass tint preserves white text over bright wallpapers.
+[bar]
+background       = "#242129"
+background-alpha = 0.35
+text             = "#ffffff"
+active           = "#ffffff"
+scale-with-font  = true
+size-horizontal  = 28
+size-vertical    = 28

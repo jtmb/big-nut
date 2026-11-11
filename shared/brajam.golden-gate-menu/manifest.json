@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "brajam.golden-gate-menu",
+  "name": "Golden Gate menu bar",
+  "version": "1.0.0",
+  "author": "Local",
+  "description": "A compact macOS-inspired menu bar with working Omarchy and app actions",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "BarWidget.qml" },
+  "barWidget": {
+    "displayName": "Golden Gate menu bar",
+    "description": "Finder-style menus for the Golden Gate theme",
+    "category": "Compositor",
+    "allowMultiple": false
+  }
+}
