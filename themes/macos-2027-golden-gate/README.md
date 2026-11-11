@@ -11,11 +11,21 @@ and Finder menu screenshots:
 https://512pixels.net/projects/aqua-screenshot-library/macos-27-golden-gate/
 
 The workspace buttons in the top bar switch desktops. Settings opens a single
-window with Appearance, Desktop & Dock, Wallpaper, and Workspaces pages for theme, wallpaper, workspace,
-window-transparency, and dock controls. App windows
+window with Appearance, Desktop & Dock, Displays, Wallpaper, and Workspaces pages for theme, wallpaper, workspace,
+window-transparency, dock and display controls. The Displays page follows
+macOS's pane: display identity, Larger Text/Default/More Space resolution
+presets, all of Omarchy's scale presets, text size, brightness, Night Shift,
+and mirroring when an external display is connected. Rotation, refresh rate,
+color profiles, and automatic brightness
+are not exposed by this display and are omitted instead of shown as inert
+controls. App windows
 are gently translucent, including those on floating workspaces; Omarchy's
-Opaque window mode turns that off. The dock is also available on desktop 1
-without changing its scrolling layout.
+Opaque window mode turns that off. The dock is also available on desktop 1;
+workspaces use Omarchy's default dwindle layout. Super+M or Window > Minimize
+sends the focused window to the dock on tiled and floating workspaces, and its
+dock icon brings it back. OpenCode opens with its
+session sidebar hidden so the transcript uses the full window; `/update`
+updates OpenCode through mise.
 
 View > Change Wallpaper selects from the original wallpaper, Cool Mist, and
 Rose. The latter two are recolors of the same Golden Gate artwork, not
@@ -24,7 +34,10 @@ The Dock page sets icon size (Small/Medium/Large/Default), screen edge and auto-
 The light appearance has its own dock-outline preference. In dark mode, Settings >
 Appearance > Dark theme outlines links outlines on windows, the dock, custom
 widgets, menus, and standard shell panels; it starts off. Dock choices are
-preserved when switching between themes.
+preserved when switching between themes. Settings > Appearance > Menu Bar >
+Peanut logo replaces the Apple mark with a monochrome peanut shell in the bar's
+foreground color; it is off by default and follows you between the light and
+dark appearances.
 
 Settings > Appearance > Frosted Glass adds a more transparent, blurred appearance while
 keeping terminal backgrounds independently see-through. Regular

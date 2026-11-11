@@ -55,10 +55,27 @@ PanelWindow {
       ? configured : (dock && dock.goldenGate ? 29 : 36)
     return Math.round(size * Style.fontScale)
   }
-  // Each app has a square slot with its icon in the middle, and the slots run
-  // straight to the edge of the dock.
+  // Each app has a slot with its icon in the middle, and the slots run
+  // straight to the edge of the dock. A running app gets the small dot Ubuntu
+  // shows on the screen-edge side of its icon: under a bottom dock, above a
+  // top dock, and to the left or right of a side dock. The slot reserves that
+  // strip on the edge side, so the dot never overlaps the icon; only the
+  // cross-axis grows, keeping the dock's icon spacing along its length.
+  readonly property int indicatorDiameter: Math.max(3, Math.round(iconSize * 0.145))
+  readonly property int indicatorGap: Style.space(2)
+  readonly property int indicatorStrip: indicatorGap + indicatorDiameter
   readonly property int iconInset: Style.spacing.md
-  readonly property int slotSize: iconSize + iconInset * 2
+  readonly property int slotWidth: iconSize + iconInset * 2 + (vertical ? indicatorStrip : 0)
+  readonly property int slotHeight: iconSize + iconInset * 2 + (vertical ? 0 : indicatorStrip)
+  readonly property int slotStep: vertical ? slotHeight : slotWidth
+  readonly property int iconX: iconInset + (position === "left" ? indicatorStrip : 0)
+  readonly property int iconY: iconInset + (position === "top" ? indicatorStrip : 0)
+  readonly property int dotX: position === "left" ? iconInset
+    : position === "right" ? iconX + iconSize + indicatorGap
+    : iconX + Math.round((iconSize - indicatorDiameter) / 2)
+  readonly property int dotY: position === "top" ? iconInset
+    : position === "bottom" ? iconY + iconSize + indicatorGap
+    : iconY + Math.round((iconSize - indicatorDiameter) / 2)
   // A pinned app that is not running is drawn faded.
   readonly property real idleOpacity: 0.7
   // Room inward of the dock for its menus: the tallest, the apps button's,
@@ -122,12 +139,12 @@ PanelWindow {
   function moveExternalDrag(screenX, screenY) {
     var at = window.origin()
     var point = Qt.point(screenX - at.x - body.x, screenY - at.y - body.y)
-    var reach = window.slotSize
+    var reach = window.vertical ? window.slotWidth : window.slotHeight
     var along = window.vertical ? point.y : point.x
     var across = window.vertical ? point.x : point.y
     var length = window.vertical ? body.height : body.width
     var depth = window.vertical ? body.width : body.height
-    var near = along >= -window.slotSize && along <= length + window.slotSize && across >= -reach && across <= depth + reach
+    var near = along >= -window.slotStep && along <= length + window.slotStep && across >= -reach && across <= depth + reach
     if (window.shown && window.autohide && near) window.revealed = true
     window.insertIndex = window.shown && near ? window.slotIndexAt(point) : -1
   }
@@ -147,9 +164,9 @@ PanelWindow {
   // The slot a point along the dock falls before, counting from the first app.
   function slotIndexAt(point) {
     var along = window.vertical ? point.y : point.x
-    var first = window.slotSize
+    var first = window.slotStep
     var count = window.dock ? window.dock.itemModel.count : 0
-    return Math.max(0, Math.min(count, Math.round((along - first) / window.slotSize)))
+    return Math.max(0, Math.min(count, Math.round((along - first) / window.slotStep)))
   }
   property var menuItem: null
   property Item menuSlot: null
@@ -230,8 +247,8 @@ PanelWindow {
     right: window.position !== "left"
   }
 
-  implicitWidth: window.vertical ? window.gap + window.slotSize + window.popupRoom : 0
-  implicitHeight: window.vertical ? 0 : window.gap + window.slotSize + window.popupRoom
+  implicitWidth: window.vertical ? window.gap + window.slotWidth + window.popupRoom : 0
+  implicitHeight: window.vertical ? 0 : window.gap + window.slotHeight + window.popupRoom
 
   mask: Region {
     item: window.contentShown ? body : null
@@ -310,7 +327,7 @@ PanelWindow {
     // How far the dock is tucked past its edge. Auto-hide slides it, but only
     // while the dock is on screen: arriving on a floating workspace shows it
     // where it belongs at once.
-    property real tuck: window.tucked ? window.slotSize + window.gap : 0
+    property real tuck: window.tucked ? (window.vertical ? window.slotWidth : window.slotHeight) + window.gap : 0
 
     // Tucking away is quicker than coming back. A gentler curve than
     // Style.easeOut, which crosses the short slide in a frame or two.
@@ -388,8 +405,8 @@ PanelWindow {
 
   component DockHandle: Item {
     id: grip
-    width: window.vertical ? window.slotSize : Style.space(22)
-    height: window.vertical ? Style.space(22) : window.slotSize
+    width: window.vertical ? window.slotWidth : Style.space(22)
+    height: window.vertical ? Style.space(22) : window.slotHeight
     Accessible.role: Accessible.Button
     Accessible.name: "Drag dock to a screen edge"
 
@@ -438,8 +455,8 @@ PanelWindow {
     property bool pressed: mouse.pressed
     property alias mouse: mouse
 
-    width: window.slotSize
-    height: window.slotSize
+    width: window.slotWidth
+    height: window.slotHeight
 
     MouseArea {
       id: mouse
@@ -453,7 +470,7 @@ PanelWindow {
   component AppsSlot: Slot {
     id: appsSlot
 
-    property real displayedShift: window.insertIndex >= 0 ? -window.slotSize / 2 : 0
+    property real displayedShift: window.insertIndex >= 0 ? -window.slotStep / 2 : 0
 
     Behavior on displayedShift {
       enabled: window.animateShifts
@@ -478,8 +495,8 @@ PanelWindow {
     // rather than taken from a font, so its edges stay crisp on the
     // transparent dock and it fills its slot like the app icons beside it.
     Item {
-      x: window.iconInset
-      y: window.iconInset
+      x: window.iconX
+      y: window.iconY
       width: window.iconSize
       height: window.iconSize
       scale: appsSlot.hovered ? 1.15 : 1
@@ -518,16 +535,22 @@ PanelWindow {
     readonly property bool lifted: window.dragIndex === index
     property point pressPoint
     property bool dragged: false
-    readonly property int windowCount: modelData ? modelData.windows.length : 0
+    // The app's windows, or the count it launched with while it starts; a
+    // launch keeps the dot steady instead of letting it blink off.
+    readonly property int windowCount: {
+      var windows = modelData ? modelData.windows.length : 0
+      var launch = window.dock ? window.dock.launches[key] : undefined
+      return launch && launch.windows > windows ? launch.windows : windows
+    }
     property real pulse: 1
 
     // Slots between where the dragged app was and where it would land step
     // aside to make room; the dragged one follows the pointer.
-    readonly property real shift: window.insertIndex >= 0 ? (index >= window.insertIndex ? 1 : -1) * window.slotSize / 2
+    readonly property real shift: window.insertIndex >= 0 ? (index >= window.insertIndex ? 1 : -1) * window.slotStep / 2
       : !window.dragging ? 0
       : lifted ? window.dragOffset
-      : (window.dragIndex < index && index <= window.dropIndex) ? -window.slotSize
-      : (window.dropIndex <= index && index < window.dragIndex) ? window.slotSize
+      : (window.dragIndex < index && index <= window.dropIndex) ? -window.slotStep
+      : (window.dropIndex <= index && index < window.dragIndex) ? window.slotStep
       : 0
     property real displayedShift: shift
 
@@ -569,7 +592,7 @@ PanelWindow {
       }
       if (!appSlot.lifted) return
       window.dragOffset = delta
-      window.dropIndex = DockModel.dropIndex(appSlot.index, delta, window.slotSize, appRepeater.count)
+      window.dropIndex = DockModel.dropIndex(appSlot.index, delta, window.slotStep, appRepeater.count)
     }
 
     mouse.onReleased: function(event) {
@@ -602,8 +625,8 @@ PanelWindow {
     // Running apps are drawn in full, pinned ones that are not running faded,
     // and one that is starting pulses between the two.
     Image {
-      x: window.iconInset
-      y: window.iconInset
+      x: window.iconX
+      y: window.iconY
       width: window.iconSize
       height: window.iconSize
       sourceSize: Qt.size(window.iconSize * 2, window.iconSize * 2)
@@ -621,6 +644,34 @@ PanelWindow {
       transformOrigin: window.popOrigin
 
       Behavior on scale { NumberAnimation { duration: Style.duration(120); easing.type: Easing.OutCubic } }
+    }
+
+    // The running dot sits under the icon like Ubuntu's dock: visible for any
+    // app with a window, and absent for an app that only has a pinned place.
+    // A count kept from launch keeps it steady while another window starts.
+    // It animates in and out rather than popping, and moves with the icon
+    // during a reorder.
+    Rectangle {
+      id: runningDot
+
+      readonly property bool active: !!window.dock && appSlot.windowCount > 0
+
+      width: window.indicatorDiameter
+      height: width
+      radius: width / 2
+      color: "#ffffff"
+      x: window.dotX
+      y: window.dotY
+      visible: opacity > 0
+      opacity: active ? 1 : 0
+      transform: Translate {
+        x: window.vertical ? 0 : appSlot.displayedShift
+        y: window.vertical ? appSlot.displayedShift : 0
+      }
+
+      Behavior on opacity {
+        NumberAnimation { duration: Style.duration(Style.reduceMotion ? 0 : 140); easing.type: Easing.OutCubic }
+      }
     }
 
     // With animations off it holds still rather than spinning through

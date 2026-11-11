@@ -95,6 +95,44 @@ class ThemeToolsTest(unittest.TestCase):
         self.run_tool("ui-hook.py", "macos-2027-golden-gate-dark")
         self.assertEqual(self.read_config()["bar"]["layout"]["right"], [{"id": "my.widget"}])
 
+    def test_first_apply_uses_default_workspace_layout(self):
+        layouts = self.home / ".local/state/omarchy/workspace-layouts"
+        layouts.mkdir(parents=True)
+        workspace_one = layouts / "1.lua"
+        workspace_one.write_text('o.workspace_mode({ workspace = "1", mode = "scrolling" })\n')
+        workspace_three = layouts / "3.lua"
+        workspace_three.write_text('o.workspace_mode({ workspace = "3", mode = "scrolling" })\n')
+        self.run_tool("ui-hook.py", "macos-2027-golden-gate")
+        self.assertFalse(workspace_one.exists())
+        self.assertTrue(workspace_three.exists())
+
+    def test_theme_installs_mise_update_command(self):
+        self.run_tool("ui-hook.py", "macos-2027-golden-gate")
+        command = self.home / ".config/opencode/commands/update.md"
+        self.assertTrue(command.exists())
+        self.assertIn("mise upgrade opencode", command.read_text())
+        self.run_tool("ui-hook.py", "gruvbox")
+        self.assertFalse(command.exists())
+
+    def test_opencode_sidebar_is_hidden_and_restored(self):
+        cli_path = self.home / ".config/opencode/cli.json"
+        cli_path.parent.mkdir(parents=True)
+        original = {"$schema": "https://opencode.ai/v2/cli.json",
+                    "theme": {"name": "opencode", "mode": "light"}}
+        cli_path.write_text(json.dumps(original))
+        self.run_tool("ui-hook.py", "macos-2027-golden-gate")
+        cli = json.loads(cli_path.read_text())
+        self.assertEqual(cli["session"]["sidebar"], "hide")
+        self.assertEqual(cli["theme"], {"name": "opencode", "mode": "light"})
+        self.run_tool("ui-hook.py", "macos-2027-golden-gate-dark")
+        cli = json.loads(cli_path.read_text())
+        self.assertEqual(cli["session"]["sidebar"], "hide")
+        self.assertEqual(cli["theme"], {"name": "opencode", "mode": "dark"})
+        self.run_tool("ui-hook.py", "gruvbox")
+        cli = json.loads(cli_path.read_text())
+        self.assertNotIn("session", cli)
+        self.assertEqual(cli["theme"], {"name": "opencode", "mode": "light"})
+
     def test_dock_border_preference_and_invalid_input(self):
         for action, expected in [("on", True), ("off", False), ("default", None)]:
             self.run_tool("dock-border.sh", action)
@@ -142,6 +180,83 @@ class ThemeToolsTest(unittest.TestCase):
         self.run_tool("ui-hook.py", "gruvbox")
         self.assertEqual(self.read_config()["dock"]["position"], "bottom")
         self.assertTrue(self.read_config()["dock"]["positionLocked"])
+
+    def test_menu_bar_logo_preference(self):
+        for action, expected in [("peanut", "peanut"), ("apple", None)]:
+            self.run_tool("menu-logo.sh", action)
+            dock = self.read_config()["dock"]
+            self.assertEqual(dock.get("goldenGateMenuLogo"), expected)
+            self.assertEqual(dock["pinned"], ["keep.app"])
+        before = self.config.read_bytes()
+        self.assertEqual(self.run_tool("menu-logo.sh", "invalid", check=False).returncode, 2)
+        self.assertEqual(self.config.read_bytes(), before)
+
+    def test_minimize_moves_tiled_window_to_the_dock_workspace(self):
+        stub = self.home / "bin/hyprctl"
+        stub.write_text(
+            '#!/bin/sh\n'
+            'case "$1" in\n'
+            '  activewindow) if [ -f "$HOME/no-window" ]; then echo \'{}\'; '
+            'else echo \'{"address":"0xabc","workspace":{"id":2}}\'; fi ;;\n'
+            '  clients) echo \'[{"address":"0xabc","workspace":{"id":2}},'
+            '{"address":"0xdef","workspace":{"id":3}}]\' ;;\n'
+            '  dispatch) echo "$2" >> "$HOME/dispatches" ;;\n'
+            'esac\n')
+        stub.chmod(0o755)
+        dispatches = self.home / "dispatches"
+
+        self.run_tool("window-minimize.sh", "")
+        lines = dispatches.read_text().splitlines()
+        self.assertEqual(len(lines), 2)
+        self.assertIn('special:minimized', lines[0])
+        self.assertIn('address:0xabc', lines[0])
+        self.assertIn('workspace = "2"', lines[1])
+
+        dispatches.unlink()
+        self.run_tool("window-minimize.sh", "0xdef")
+        self.assertIn('workspace = "3"', dispatches.read_text().splitlines()[1])
+
+        (self.home / "no-window").write_text("")
+        before = dispatches.read_bytes()
+        self.assertEqual(self.run_tool("window-minimize.sh", "", check=False).returncode, 1)
+        self.assertEqual(dispatches.read_bytes(), before)
+
+    def test_display_state_reports_focused_monitor(self):
+        hyprctl = self.home / "bin/hyprctl"
+        hyprctl.write_text(
+            '#!/bin/sh\n'
+            'echo \'[{"name":"eDP-1","description":"Built-in panel","make":"Test",'
+            '"model":"Panel","width":2160,"height":1440,"refreshRate":60.0,'
+            '"scale":2,"transform":0,"focused":true,"disabled":false,'
+            '"availableModes":["2160x1440@60.00Hz"]}]\'\n')
+        hyprctl.chmod(0o755)
+        omarchy = self.home / "bin/omarchy"
+        omarchy.write_text(
+            '#!/bin/sh\n'
+            'case "$1 $2" in\n'
+            '  "brightness display") echo 77 ;;\n'
+            '  "display text") echo "text size: 14 px" ;;\n'
+            '  "toggle nightlight") echo \'{"enabled":true,"temperature":4000}\' ;;\n'
+            'esac\n')
+        omarchy.chmod(0o755)
+        toggle = self.home / "bin/omarchy-hyprland-toggle-enabled"
+        toggle.write_text("#!/bin/sh\nexit 1\n")
+        toggle.chmod(0o755)
+        external = self.home / "bin/omarchy-hyprland-monitor-external-active"
+        external.write_text("#!/bin/sh\nexit 0\n")
+        external.chmod(0o755)
+
+        result = subprocess.run(["bash", str(THEME / "display-state.sh")], env=self.env,
+                                check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+        self.assertEqual(state["monitors"][0]["name"], "eDP-1")
+        self.assertTrue(state["monitors"][0]["internal"])
+        self.assertTrue(state["monitors"][0]["focused"])
+        self.assertEqual(state["brightness"], 77)
+        self.assertEqual(state["textSize"], 14)
+        self.assertTrue(state["nightlight"]["enabled"])
+        self.assertFalse(state["mirror"])
+        self.assertTrue(state["external"])
 
     def test_dark_outline_setting_preserves_light_dock_and_pins(self):
         for action, expected in [("on", True), ("off", False)]:

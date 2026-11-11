@@ -73,6 +73,74 @@ the palette. The theme hook reapplies that staged palette adjustment on dark
 theme switches. User `shell.toml` overrides and other themes are not changed.
 Light mode retains its independent `dock.showBorder` preference.
 
+## Window minimize
+
+Omarchy's stock minimize helper only acts on floating workspaces because its
+built-in dock is floating-only. The Golden Gate dock is mounted on tiled
+workspaces too, so the theme rebinds **Super+M** to
+`themes/macos-2027-golden-gate/window-minimize.sh`. That script moves the focused
+window to Hyprland's `special:minimized` workspace, returns focus to the
+workspace it came from, and the dock restores it when its app icon is clicked.
+**Window → Minimize** in the top bar runs the same command. The helper also
+accepts an optional window address, like Omarchy's version. Windows minimized
+this way are not kept in a separate stack; the dock's existing restore path
+brings them forward on the current workspace. Because Omarchy stages a copy of
+the theme, reapply the theme after updating so the staged `hyprland.lua` gets
+the new SUPER+M bind.
+
+## Displays page
+
+**Settings → Displays** follows the macOS 27 Golden Gate Displays pane
+([512 Pixels screenshot](https://media.512pixels.net/downloads/macos-screenshots/27/27-Golden-Gate-Settings-Display.png)):
+a display illustration and identity, Larger Text/Default/More Space resolution
+choices, Omarchy's six scale presets, a text-size slider, a brightness slider,
+and Night Shift. It also shows **Mirror built-in display** when an external
+monitor is active.
+
+`themes/macos-2027-golden-gate/display-state.sh` returns the focused monitor,
+backlight percentage, text size, Night Shift state, mirroring state, enabled
+display count, and whether an external monitor is connected as one JSON
+snapshot. The page runs the existing Omarchy commands:
+
+- Resolution: `omarchy hyprland monitor scaling <scale>`, using the
+  2.4x / 2x / 1.6x presets for Larger Text / Default / More Space. It applies to the focused
+  monitor, as Omarchy's own display panel does.
+- Scale: the same `omarchy hyprland monitor scaling` path with Omarchy's
+  1x / 1.25x / 1.6x / 2x / 3x / 4x presets; a custom current scale is added to
+  the row so it always shows the live value.
+- Text size: `omarchy display text size <px>` with Omarchy's
+  9/10/11/12/14/16/20 px stops. This is the same control as Omarchy's monitor
+  panel, including its GTK and terminal text scaling.
+- Brightness: `omarchy brightness display --no-osd --monitor <name> <n>%`.
+- Night Shift: `omarchy toggle nightlight`.
+- Mirroring: `omarchy hyprland monitor internal mirror on|off`.
+- Display enable/disable: `hyprctl eval` on the monitor rule, shown only when
+  more than one display is connected (the last enabled display cannot be
+  switched off).
+
+macOS rows without a working Linux equivalent are intentionally omitted rather
+than shown disabled: **Automatically adjust brightness** (no ambient-light
+daemon is configured), **Color profile** (no ICC/color-management workflow), and
+**When connected to TV**. Rotation, refresh rate, and HDR likewise stay in
+Hyprland's own monitor configuration, not this page. The page states this in a
+short footnote.
+
+## Menu bar logo
+
+**Settings → Appearance → Menu Bar → Peanut logo** replaces the Apple mark in
+the top bar with the theme's monochrome peanut-shell mark. The setting is stored
+as `dock.goldenGateMenuLogo = "peanut"` in `shell.json`; removing it returns to
+the Apple mark. Use
+`bash ~/.config/omarchy/themes/macos-2027-golden-gate/menu-logo.sh peanut` or
+`apple` instead of editing the file directly. The menu bar widget repaints in
+the current bar foreground color, so the mark follows both appearances and the
+shared `shared/brajam.golden-gate-menu/peanut.svg` asset. The mark's 13×13
+logical slot keeps it at the Apple glyph's menu-bar size instead of overflowing
+the slot. The asset's shell
+proportions are informed by Twemoji's peanut artwork (CC-BY 4.0). The
+preference is kept when switching themes, like the other Golden Gate dock
+options.
+
 ## Verification
 
 Run `python3 -m unittest discover -s tests -v` for isolated script and rollback

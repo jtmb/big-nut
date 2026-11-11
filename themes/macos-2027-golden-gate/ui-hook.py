@@ -13,9 +13,18 @@ THEME = "macos-2027-golden-gate"
 DARK_THEME = "macos-2027-golden-gate-dark"
 CONFIG = Path.home() / ".config/omarchy/shell.json"
 STATE = Path.home() / ".local/state/omarchy/golden-gate-ui.json"
+WORKSPACE_LAYOUTS = Path.home() / ".local/state/omarchy/workspace-layouts"
 OPENCODE_CLI = Path.home() / ".config/opencode/cli.json"
+OPENCODE_COMMANDS = Path.home() / ".config/opencode/commands"
 LIGHT_OPENCODE = {"name": "opencode", "mode": "light"}
 DARK_OPENCODE = {"name": "opencode", "mode": "dark"}
+OPENCODE_UPDATE_COMMAND = r"""---
+description: Update OpenCode with mise
+---
+!`mise upgrade opencode 2>&1`
+
+The OpenCode upgrade has finished. Reply with a one-line result and remind the user to restart OpenCode to use the new version. Do not change any files.
+"""
 KEYS = ("bar", "dock", "plugins", "disabledPlugins", "cloneSourceRestores")
 
 
@@ -34,6 +43,31 @@ def save(path, data):
 
 def snapshot(data):
     return {key: copy.deepcopy(data[key]) for key in KEYS if key in data}
+
+
+def use_default_workspace_layout():
+    """Leave workspace 1 on Omarchy's default layout instead of the old
+    scrolling convenience the dock used to require."""
+    mode_file = WORKSPACE_LAYOUTS / "1.lua"
+    try:
+        if 'mode = "scrolling"' in mode_file.read_text():
+            mode_file.unlink()
+    except OSError:
+        pass
+
+
+def install_opencode_update_command():
+    """OpenCode's built-in updater does not support mise. Use a custom /update
+    command that upgrades the mise-managed install instead."""
+    command = OPENCODE_COMMANDS / "update.md"
+    if command.exists():
+        return False
+    try:
+        command.parent.mkdir(parents=True, exist_ok=True)
+        command.write_text(OPENCODE_UPDATE_COMMAND)
+        return True
+    except OSError:
+        return False
 
 
 def main():
@@ -107,6 +141,8 @@ def main():
             save(STATE, state)
             return
         before = snapshot(config)
+        use_default_workspace_layout()
+        opencode_update_created = install_opencode_update_command()
         bar = copy.deepcopy(config.get("bar", {}))
         bar["background"] = "glassy"
         bar["position"] = "top"
@@ -149,8 +185,15 @@ def main():
         cli = json.loads(OPENCODE_CLI.read_text()) if OPENCODE_CLI.is_file() else {}
         cli_before = copy.deepcopy(cli.get("theme"))
         cli_applied = DARK_OPENCODE if slug == DARK_THEME else LIGHT_OPENCODE
+        session_before = copy.deepcopy(cli.get("session"))
+        session = cli.get("session")
+        session = copy.deepcopy(session) if isinstance(session, dict) else {}
+        session["sidebar"] = "hide"
+        cli["session"] = session
         save(STATE, {"before": before, "applied": applied, "slug": slug,
-                     "cli_theme_before": cli_before, "cli_theme_applied": cli_applied})
+                     "cli_theme_before": cli_before, "cli_theme_applied": cli_applied,
+                     "cli_session_before": session_before, "cli_session_applied": "hide",
+                     "opencode_update_command_created": opencode_update_created})
         save(CONFIG, config)
         cli["theme"] = copy.deepcopy(cli_applied)
         save(OPENCODE_CLI, cli)
@@ -205,6 +248,25 @@ def main():
                 else:
                     cli.pop("theme", None)
                 save(OPENCODE_CLI, cli)
+        if "cli_session_applied" in state and OPENCODE_CLI.is_file():
+            cli = json.loads(OPENCODE_CLI.read_text())
+            session = cli.get("session")
+            if isinstance(session, dict) and session.get("sidebar") == state["cli_session_applied"]:
+                before_session = state.get("cli_session_before")
+                if before_session is None:
+                    session.pop("sidebar", None)
+                    if not session:
+                        cli.pop("session", None)
+                else:
+                    cli["session"] = before_session
+                save(OPENCODE_CLI, cli)
+        if state.get("opencode_update_command_created"):
+            command = OPENCODE_COMMANDS / "update.md"
+            try:
+                if command.read_text() == OPENCODE_UPDATE_COMMAND:
+                    command.unlink()
+            except OSError:
+                pass
         STATE.unlink()
 
 

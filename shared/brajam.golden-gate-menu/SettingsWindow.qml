@@ -4,6 +4,7 @@ import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Wayland
 import qs.Ui
+import qs.Commons
 
 // Golden Gate settings use Omarchy's commands; unsupported macOS controls are
 // deliberately omitted instead of being presented as working settings.
@@ -16,7 +17,56 @@ Item {
   property string opacityMode: "transparent"
   property string search: ""
   property string previousPage: ""
+  property var displayState: ({})
+  property bool displayRefreshPending: false
   readonly property var dock: config.dock || ({})
+  readonly property var focusedDisplay: {
+    var list = displayState.monitors || []
+    for (var i = 0; i < list.length; i++) if (list[i].focused) return list[i]
+    return null
+  }
+  readonly property real displayScale: focusedDisplay ? focusedDisplay.scale : 0
+  // macOS orders its resolution choices as Larger Text, Default, More Space.
+  readonly property var displayPresets: [
+    { label: "Larger Text", scale: 2.4 },
+    { label: "Default", scale: 2 },
+    { label: "More Space", scale: 1.6 }
+  ]
+  readonly property int displayPreset: displayScale >= 2.2 ? 0 : displayScale >= 1.8 ? 1 : 2
+  // Omarchy's monitor panel offers these scale presets; keep a custom current
+  // scale visible too, so selecting a macOS resolution card never leaves the
+  // Scale control without a selected value.
+  readonly property var scalePresets: [1, 1.25, 1.6, 2, 3, 4]
+  readonly property var scaleChoices: {
+    var list = scalePresets.slice()
+    var current = displayScale
+    if (current > 0) {
+      var found = false
+      for (var i = 0; i < list.length; i++) if (Math.abs(list[i] - current) < 0.01) found = true
+      if (!found) { list.push(Math.round(current * 100) / 100); list.sort(function(a, b) { return a - b }) }
+    }
+    return list
+  }
+  readonly property int scaleIndex: {
+    var best = 0, distance = 1e9
+    for (var i = 0; i < scaleChoices.length; i++) {
+      var d = Math.abs(scaleChoices[i] - displayScale)
+      if (d < distance) { distance = d; best = i }
+    }
+    return best
+  }
+  readonly property var textSizeStops: [9, 10, 11, 12, 14, 16, 20]
+  readonly property int textSizeIndex: {
+    var px = displayState.textSize !== null && displayState.textSize !== undefined ? displayState.textSize : 12
+    var best = 0, distance = 1e9
+    for (var i = 0; i < textSizeStops.length; i++) {
+      var d = Math.abs(textSizeStops[i] - px)
+      if (d < distance) { distance = d; best = i }
+    }
+    return best
+  }
+  readonly property bool brightnessAvailable: displayState.brightness !== null && displayState.brightness !== undefined
+  readonly property bool nightlightOn: displayState.nightlight ? displayState.nightlight.enabled === true : false
   readonly property bool dark: dock.goldenGateDark === true
   readonly property color foreground: dark ? "#f4f4f5" : "#222224"
   readonly property color secondary: dark ? "#a7a7ac" : "#77777c"
@@ -27,7 +77,7 @@ Item {
   readonly property color accent: "#007aff"
   readonly property int workspaceId: Hyprland.focusedMonitor && Hyprland.focusedMonitor.activeWorkspace
     ? Hyprland.focusedMonitor.activeWorkspace.id : -1
-  readonly property string title: page === "dock" ? "Desktop & Dock" : page === "desktop" ? "Workspaces" : page === "wallpaper" ? "Wallpaper" : "Appearance"
+  readonly property string title: page === "dock" ? "Desktop & Dock" : page === "displays" ? "Displays" : page === "desktop" ? "Workspaces" : page === "wallpaper" ? "Wallpaper" : "Appearance"
 
   FileView {
     path: Quickshell.env("HOME") + "/.config/omarchy/shell.json"
@@ -41,21 +91,70 @@ Item {
     command: ["omarchy", "hyprland", "window", "transparency"]
     stdout: StdioCollector { onStreamFinished: root.opacityMode = text.trim() }
   }
+  Process {
+    id: displayReader
+    command: ["bash", Quickshell.env("HOME") + "/.config/omarchy/themes/macos-2027-golden-gate/display-state.sh"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        try { root.displayState = JSON.parse(text) }
+        catch (e) { root.displayState = ({}) }
+      }
+    }
+    onExited: if (root.displayRefreshPending) root.refreshDisplays()
+  }
+  Timer {
+    id: displayRefresh
+    interval: 700
+    repeat: false
+    onTriggered: root.refreshDisplays()
+  }
   function open(section) {
     root.page = section || "appearance"
     root.opened = true
     root.search = ""
     if (!modeReader.running) modeReader.running = true
+    root.refreshDisplays()
     Qt.callLater(function() { keyReceiver.forceActiveFocus() })
   }
   function close() { root.opened = false }
-  function navigate(section) { if (root.page !== section) { root.previousPage = root.page; root.page = section; content.contentY = 0 } }
+  function navigate(section) {
+    if (root.page !== section) { root.previousPage = root.page; root.page = section; content.contentY = 0 }
+    if (section === "displays") root.refreshDisplays()
+  }
+  function refreshDisplays() {
+    if (displayReader.running) { root.displayRefreshPending = true; return }
+    root.displayRefreshPending = false
+    displayReader.running = true
+  }
   function run(command) { if (command && root.bar) root.bar.run(command) }
   function chooseMode(mode) { root.opacityMode = mode; root.run("omarchy hyprland window transparency " + mode) }
+  function displayScalePreset(scale) { root.run("omarchy hyprland monitor scaling " + scale); displayRefresh.restart() }
+  function formatScale(value) { return (Math.round(value * 100) / 100) + "x" }
+  function setTextSize(index) {
+    var i = Math.max(0, Math.min(root.textSizeStops.length - 1, Math.round(index)))
+    textSizeSlider.liveValue = i
+    root.run("omarchy display text size " + root.textSizeStops[i])
+    displayRefresh.restart()
+  }
+  function setDisplayEnabled(name, enabled) {
+    var output = '"' + String(name || "").replace(/[\\"]/g, "\\$&") + '"'
+    var expression = "hl.monitor({ output = " + output + ", disabled = " + (enabled ? "true" : "false") + " })"
+    root.run("hyprctl eval " + Util.shellQuote(expression))
+    displayRefresh.restart()
+  }
+  function setBrightness(value) {
+    if (!root.focusedDisplay) return
+    root.run("omarchy brightness display --no-osd --monitor "
+      + Util.shellQuote(root.focusedDisplay.name) + " " + Math.round(value) + "%")
+    displayRefresh.restart()
+  }
+  function toggleNightlight() { root.run("omarchy toggle nightlight"); displayRefresh.restart() }
+  function setMirror(on) { root.run("omarchy hyprland monitor internal mirror " + (on ? "on" : "off")); displayRefresh.restart() }
   function dockSize(size) { root.run("bash \"$HOME/.config/omarchy/themes/macos-2027-golden-gate/dock-size.sh\" " + size) }
   function dockBorder(value) { root.run("bash \"$HOME/.config/omarchy/themes/macos-2027-golden-gate/dock-border.sh\" " + value) }
   function dockPositionLock(value) { root.run("bash \"$HOME/.config/omarchy/themes/macos-2027-golden-gate/dock-position-lock.sh\" " + value) }
   function darkBorder(value) { root.run("bash \"$HOME/.config/omarchy/themes/macos-2027-golden-gate/dark-border.sh\" " + value) }
+  function menuLogo(value) { root.run("bash \"$HOME/.config/omarchy/themes/macos-2027-golden-gate/menu-logo.sh\" " + value) }
 
   OverlayWindow {
     id: panel
@@ -121,6 +220,7 @@ Item {
             model: [
               { id: "appearance", title: "Appearance", icon: "\uf042", color: "#66666b" },
               { id: "dock", title: "Desktop & Dock", icon: "\uf108", color: "#515157" },
+              { id: "displays", title: "Displays", icon: "\uf109", color: "#3f86e0" },
               { id: "wallpaper", title: "Wallpaper", icon: "\uf03e", color: "#00aac9" },
               { id: "desktop", title: "Workspaces", icon: "\uf00a", color: "#8c76d8" }
             ]
@@ -223,6 +323,16 @@ Item {
                 Label { x: 14; y: 36; text: "Windows, Dock and Golden Gate surfaces"; color: root.secondary; font.pixelSize: 11 }
                 SwitchControl { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; checked: root.dock.goldenGateDarkBorders === true; onClicked: root.darkBorder(checked ? "off" : "on") }
               }
+              Column {
+                width: parent.width; spacing: 7
+                Label { x: 10; text: "Menu Bar"; font.weight: Font.DemiBold; font.pixelSize: 13 }
+                Rectangle {
+                  width: parent.width; height: 60; radius: 10; color: root.group
+                  Label { x: 14; y: 13; text: "Peanut logo"; font.pixelSize: 13 }
+                  Label { x: 14; y: 33; text: "Replaces the Apple mark in the menu bar"; color: root.secondary; font.pixelSize: 11 }
+                  SwitchControl { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; checked: root.dock.goldenGateMenuLogo === "peanut"; onClicked: root.menuLogo(checked ? "apple" : "peanut") }
+                }
+              }
               Rectangle {
                 width: parent.width; height: 50; radius: 10; color: root.group
                 Label { x: 14; anchors.verticalCenter: parent.verticalCenter; text: "Wallpaper"; font.pixelSize: 13 }
@@ -290,6 +400,214 @@ Item {
             }
 
             Column {
+              width: parent.width; spacing: 10; visible: root.page === "displays"
+              Rectangle {
+                width: parent.width; height: 168; radius: 10; color: root.group
+                Item {
+                  anchors.horizontalCenter: parent.horizontalCenter
+                  y: 16
+                  width: 176; height: 100
+                  Rectangle {
+                    x: 8; y: 0; width: 160; height: 92; radius: 7
+                    color: root.dark ? "#0c0c10" : "#2c2c31"
+                    border.width: 1; border.color: root.dark ? "#4b4b52" : "#8b8b92"
+                    Rectangle {
+                      anchors.fill: parent; anchors.margins: 5; radius: 3
+                      color: root.dark ? "#1b1b20" : "#4b4b52"
+                      clip: true
+                      Image {
+                        anchors.fill: parent
+                        fillMode: Image.PreserveAspectCrop
+                        source: "file://" + Quickshell.env("HOME") + "/.local/state/omarchy/current/background"
+                        cache: false
+                      }
+                    }
+                  }
+                  Rectangle {
+                    x: 0; y: 95; width: 176; height: 5; radius: 3
+                    color: root.dark ? "#5b5b62" : "#c9c9ce"
+                  }
+                }
+                Label {
+                  y: 124; width: parent.width; horizontalAlignment: Text.AlignHCenter
+                  text: root.focusedDisplay ? (root.focusedDisplay.internal ? "Built-in Display" : (root.focusedDisplay.description || root.focusedDisplay.name)) : "Display"
+                  font.pixelSize: 14; font.weight: Font.DemiBold
+                }
+                Label {
+                  y: 145; width: parent.width; horizontalAlignment: Text.AlignHCenter
+                  color: root.secondary; font.pixelSize: 11
+                  text: root.focusedDisplay
+                    ? root.focusedDisplay.name + "  •  " + Math.round(root.focusedDisplay.width / root.focusedDisplay.scale) + " × " + Math.round(root.focusedDisplay.height / root.focusedDisplay.scale) + "  •  " + Math.round(root.focusedDisplay.refreshRate) + " Hz"
+                    : "Waiting for the display"
+                }
+              }
+              Rectangle {
+                width: parent.width; height: 122; radius: 10; color: root.group
+                Label { x: 14; y: 13; text: "Resolution"; font.pixelSize: 13 }
+                Label {
+                  anchors.right: parent.right; anchors.rightMargin: 14; y: 14
+                  color: root.secondary; font.pixelSize: 11
+                  text: root.focusedDisplay ? Math.round(root.focusedDisplay.width / root.focusedDisplay.scale) + " × " + Math.round(root.focusedDisplay.height / root.focusedDisplay.scale) : ""
+                }
+                Row {
+                  x: 14; y: 38; width: parent.width - 28; spacing: 12
+                  Repeater {
+                    model: root.displayPresets
+                    delegate: Item {
+                      required property var modelData
+                      required property int index
+                      width: (parent.width - 24) / 3; height: 70
+                      Rectangle {
+                        x: 2; width: parent.width - 4; height: 44; radius: 5
+                        color: root.dark ? "#2c2c30" : "#f7f7f8"
+                        border.width: root.displayPreset === index ? 3 : 1
+                        border.color: root.displayPreset === index ? root.accent : (root.dark ? "#5c5c62" : "#d2d2d6")
+                        Rectangle {
+                          anchors.centerIn: parent; width: parent.width * 0.64; height: 30; radius: 3
+                          color: root.dark ? "#46464c" : "#ffffff"
+                          border.width: 1; border.color: root.dark ? "#5a5a60" : "#dedee2"
+                          Column {
+                            anchors.centerIn: parent
+                            spacing: index === 0 ? 4 : index === 1 ? 3 : 2
+                            Repeater {
+                              model: index === 0 ? 3 : index === 1 ? 5 : 7
+                              delegate: Rectangle {
+                                required property int index
+                                width: index === 0 ? 26 : 30
+                                height: index === 0 ? 5 : index === 1 ? 3 : 1
+                                color: root.dark ? "#98989f" : "#9e9ea6"
+                              }
+                            }
+                          }
+                        }
+                      }
+                      Label {
+                        y: 50; width: parent.width; horizontalAlignment: Text.AlignHCenter
+                        text: parent.modelData.label; font.pixelSize: 11
+                        font.weight: root.displayPreset === parent.index ? Font.DemiBold : Font.Normal
+                      }
+                      MouseArea {
+                        anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                        onClicked: root.displayScalePreset(parent.modelData.scale)
+                      }
+                    }
+                  }
+                }
+              }
+              Rectangle {
+                width: parent.width; height: 68; radius: 10; color: root.group
+                Label { x: 14; y: 13; text: "Scale"; font.pixelSize: 13 }
+                Label {
+                  anchors.right: parent.right; anchors.rightMargin: 14; y: 14
+                  color: root.secondary; font.pixelSize: 11
+                  text: root.displayScale > 0 ? root.formatScale(root.displayScale) : ""
+                }
+                Segment {
+                  x: 14; y: 34; width: parent.width - 28
+                  choices: root.scaleChoices.map(root.formatScale)
+                  selectedIndex: root.scaleIndex
+                  onChosen: function(index) { root.displayScalePreset(root.scaleChoices[index]) }
+                }
+              }
+              Rectangle {
+                width: parent.width; height: 74; radius: 10; color: root.group
+                Label { x: 14; y: 13; text: "Text size"; font.pixelSize: 13 }
+                Label {
+                  anchors.right: parent.right; anchors.rightMargin: 16; y: 14
+                  color: root.secondary; font.pixelSize: 11
+                  text: root.textSizeStops[Math.round(textSizeSlider.liveValue)] + " px"
+                }
+                SliderControl {
+                  id: textSizeSlider
+                  x: 14; y: 38; width: parent.width - 28
+                  minimum: 0; maximum: root.textSizeStops.length - 1
+                  value: root.textSizeIndex
+                  onReleased: function(value) { root.setTextSize(value) }
+                }
+              }
+              Rectangle {
+                visible: root.brightnessAvailable
+                width: parent.width; height: 74; radius: 10; color: root.group
+                Label { x: 14; y: 13; text: "Brightness"; font.pixelSize: 13 }
+                Label {
+                  anchors.right: parent.right; anchors.rightMargin: 16; y: 14
+                  color: root.secondary; font.pixelSize: 11
+                  text: Math.round(brightnessSlider.liveValue) + "%"
+                }
+                Text {
+                  x: 16; y: brightnessSlider.y + (brightnessSlider.height - height) / 2
+                  textFormat: Text.PlainText; text: "\uf185"
+                  font.family: "Font Awesome 7 Free Solid"; font.pixelSize: 11
+                  color: root.secondary
+                }
+                Text {
+                  anchors.right: parent.right; anchors.rightMargin: 16
+                  y: brightnessSlider.y + (brightnessSlider.height - height) / 2
+                  textFormat: Text.PlainText; text: "\uf185"
+                  font.family: "Font Awesome 7 Free Solid"; font.pixelSize: 16
+                  color: root.secondary
+                }
+                SliderControl {
+                  id: brightnessSlider
+                  x: 36; y: 38; width: parent.width - 72
+                  minimum: 1; maximum: 100
+                  value: root.brightnessAvailable ? root.displayState.brightness : 0
+                  onReleased: function(value) { root.setBrightness(value) }
+                }
+              }
+              Rectangle {
+                width: parent.width; height: 60; radius: 10; color: root.group
+                Label { x: 14; y: 13; text: "Night Shift"; font.pixelSize: 13 }
+                Label { x: 14; y: 33; text: "Warm the display color at night"; color: root.secondary; font.pixelSize: 11 }
+                SwitchControl {
+                  anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
+                  checked: root.nightlightOn
+                  onClicked: root.toggleNightlight()
+                }
+              }
+              Rectangle {
+                visible: root.displayState.external === true
+                width: parent.width; height: 60; radius: 10; color: root.group
+                Label { x: 14; y: 13; text: "Mirror built-in display"; font.pixelSize: 13 }
+                Label { x: 14; y: 33; text: "Show the same image on both displays"; color: root.secondary; font.pixelSize: 11 }
+                SwitchControl {
+                  anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
+                  checked: root.displayState.mirror === true
+                  onClicked: root.setMirror(checked === false)
+                }
+              }
+              Column {
+                visible: (root.displayState.monitors || []).length > 1
+                width: parent.width; spacing: 7
+                Label { x: 10; text: "Displays"; font.weight: Font.DemiBold; font.pixelSize: 13 }
+                Repeater {
+                  model: root.displayState.monitors || []
+                  delegate: Rectangle {
+                    required property var modelData
+                    width: parent.width; height: 52; radius: 10; color: root.group
+                    Label {
+                      x: 14; anchors.verticalCenter: parent.verticalCenter
+                      text: modelData.internal ? "Built-in Display" : (modelData.description || modelData.name)
+                      font.pixelSize: 13
+                    }
+                    SwitchControl {
+                      anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
+                      checked: modelData.enabled
+                      enabled: !(modelData.enabled && root.displayState.enabledCount <= 1)
+                      opacity: enabled ? 1 : 0.45
+                      onClicked: root.setDisplayEnabled(modelData.name, modelData.enabled)
+                    }
+                  }
+                }
+              }
+              Label {
+                x: 10; width: parent.width - 20; wrapMode: Text.WordWrap
+                text: "Resolution changes the whole desktop for this display; Scale and Text size match Omarchy's display panel. Rotation, refresh rate, color profiles, and automatic brightness are not exposed by this display."
+                color: root.secondary; font.pixelSize: 11
+              }
+            }
+
+            Column {
               width: parent.width; spacing: 10; visible: root.page === "wallpaper"
               Label { x: 10; text: "Wallpaper"; font.weight: Font.DemiBold; font.pixelSize: 13 }
               Rectangle {
@@ -315,7 +633,7 @@ Item {
                 Label { x: 14; anchors.verticalCenter: parent.verticalCenter; text: "Window layout"; font.pixelSize: 13 }
                 SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Cycle Layout"; onClicked: root.run("omarchy hyprland workspace layout toggle") }
               }
-              Label { x: 10; width: parent.width - 20; wrapMode: Text.WordWrap; text: "Workspace 1 retains its scrolling layout while the Dock is visible."; color: root.secondary; font.pixelSize: 11 }
+              Label { x: 10; width: parent.width - 20; wrapMode: Text.WordWrap; text: "Workspaces use Omarchy's default dwindle layout; Cycle Layout changes the current workspace."; color: root.secondary; font.pixelSize: 11 }
             }
           }
           Rectangle { anchors.right: parent.right; width: 4; radius: 2; visible: content.contentHeight > content.height; height: Math.max(35, content.height * content.height / content.contentHeight); y: content.contentY * (content.height - height) / Math.max(1, content.contentHeight - content.height); color: root.secondary; opacity: 0.6 }
@@ -342,6 +660,46 @@ Item {
     width: 38; height: 22; radius: 11; color: checked ? root.accent : (root.dark ? "#67676a" : "#d1d1d3")
     Rectangle { x: toggle.checked ? 18 : 2; y: 2; width: 18; height: 18; radius: 9; color: "white"; border.width: 1; border.color: "#dddddf" }
     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: toggle.clicked() }
+  }
+  component SliderControl: Item {
+    id: slider
+    property real minimum: 0
+    property real maximum: 100
+    property real value: 0
+    property real liveValue: value
+    signal released(real value)
+    implicitHeight: 24
+    readonly property real fraction: Math.max(0, Math.min(1, (liveValue - minimum) / Math.max(0.0001, maximum - minimum)))
+    readonly property real trackLeft: 9
+    readonly property real trackWidth: Math.max(1, width - 18)
+    onValueChanged: if (!mouse.pressed) liveValue = value
+    function handle(x) {
+      var f = Math.max(0, Math.min(1, (x - trackLeft) / trackWidth))
+      liveValue = minimum + f * (maximum - minimum)
+    }
+    Rectangle {
+      x: slider.trackLeft; y: (parent.height - 5) / 2
+      width: slider.trackWidth; height: 5; radius: 3
+      color: root.dark ? "#636367" : "#d5d5d8"
+    }
+    Rectangle {
+      x: slider.trackLeft; y: (parent.height - 5) / 2
+      width: slider.trackWidth * slider.fraction; height: 5; radius: 3
+      color: root.accent
+    }
+    Rectangle {
+      x: slider.trackLeft + slider.trackWidth * slider.fraction - 9; y: 3
+      width: 18; height: 18; radius: 9
+      color: "#fafafa"; border.width: 1; border.color: "#ccccce"
+    }
+    MouseArea {
+      id: mouse
+      anchors.fill: parent
+      cursorShape: Qt.PointingHandCursor
+      onPressed: slider.handle(mouse.x)
+      onPositionChanged: if (pressed) slider.handle(mouse.x)
+      onReleased: slider.released(slider.liveValue)
+    }
   }
   component Segment: Rectangle {
     id: segment

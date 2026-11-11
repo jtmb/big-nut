@@ -1,5 +1,7 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
+import Quickshell.Io
 import qs.Ui
 import qs.Commons
 import qs.Commons as Commons
@@ -11,7 +13,19 @@ BarWidget {
   property string activeMenu: "apple"
   property bool popupOpen: false
   property Item selectedButton: null
+  property var shellConfig: ({})
+  // The Big Nut peanut mark keeps the Apple logo's monochrome silhouette
+  // treatment while using the theme's own pod artwork.
+  readonly property bool peanutLogo: (shellConfig.dock || {}).goldenGateMenuLogo === "peanut"
   function close() { popupOpen = false; settingsWindow.close() }
+
+  FileView {
+    path: Quickshell.env("HOME") + "/.config/omarchy/shell.json"
+    watchChanges: true
+    printErrors: false
+    onLoaded: { try { root.shellConfig = JSON.parse(text()) } catch (e) { root.shellConfig = ({}) } }
+    onFileChanged: reload()
+  }
 
   // These are working Linux actions, not fake native Finder menus.
   readonly property var titles: [
@@ -65,6 +79,8 @@ BarWidget {
       { title: "Applications", command: "omarchy-shell omarchy.dock apps" }
     ],
     window: [
+      { title: "Minimize", command: "bash \"$HOME/.config/omarchy/themes/macos-2027-golden-gate/window-minimize.sh\"" },
+      { title: "", command: "" },
       { title: "All Apps…", command: "omarchy-shell omarchy.dock apps" },
       { title: "Omarchy Menu…", command: "omarchy menu toggle" }
     ],
@@ -116,7 +132,7 @@ BarWidget {
   ShellIpc {
     target: "brajam.golden-gate-menu"
     function show(menu: string): void {
-      if (menu === "desktop" || menu === "wallpaper") {
+      if (menu === "desktop" || menu === "wallpaper" || menu === "displays") {
         root.popupOpen = false
         settingsWindow.open(menu)
         return
@@ -157,6 +173,9 @@ BarWidget {
 
         Text {
           id: heading
+          // Keep the Apple glyph measured and centered so toggling the peanut
+          // does not move the rest of the menu bar.
+          visible: !(menuButton.modelData.id === "apple" && root.peanutLogo)
           anchors.centerIn: parent
           textFormat: Text.PlainText
           text: menuButton.modelData.text
@@ -164,6 +183,34 @@ BarWidget {
           font.family: menuButton.modelData.id === "apple" ? "Font Awesome 7 Brands" : "Adwaita Sans"
           font.pixelSize: menuButton.modelData.id === "apple" ? 15 : 11
           font.weight: menuButton.modelData.id === "finder" ? Font.DemiBold : Font.Medium
+        }
+        Item {
+          visible: menuButton.modelData.id === "apple" && root.peanutLogo
+          anchors.centerIn: parent
+          width: 13
+          height: 13
+          Image {
+            id: peanutImage
+            anchors.fill: parent
+            fillMode: Image.PreserveAspectFit
+            source: Qt.resolvedUrl("peanut.svg")
+            sourceSize.width: Math.round(width * Screen.devicePixelRatio)
+            sourceSize.height: Math.round(height * Screen.devicePixelRatio)
+            // Hidden source texture for the bar-foreground mask below.
+            visible: false
+            layer.enabled: true
+          }
+          Rectangle {
+            anchors.fill: peanutImage
+            color: root.bar ? root.bar.barForeground : "white"
+            layer.enabled: true
+            layer.effect: MultiEffect {
+              maskEnabled: true
+              maskSource: peanutImage
+              maskThresholdMin: 0.5
+              maskSpreadAtMin: 1.0
+            }
+          }
         }
         MouseArea {
           anchors.fill: parent
