@@ -17,7 +17,8 @@ metric-compatible Segoe UI substitute.
   Show desktop strip on the right), plus Omarchy's tray, network, volume and
   battery widgets.
 - Start menu: dark Windows 10 rail, all-apps list, grouped live tiles
-  (Life at a glance, Productivity, Explore), power menu.
+  (Life at a glance, Productivity, Explore) with Windows-style wide tiles,
+  power menu.
 - Colors: white app surfaces, black window text, `#0078d7` accent, square
   corners, opaque windows and a 1px accent border.
 - Wallpaper: `backgrounds/1-windows-10-blue.webp`, an original blue pane
@@ -58,7 +59,9 @@ pins; edit it or use the START menu's pinned app list as a starting point.
 - Task View: show open windows as clickable cards.
 - App button: launch, focus, or minimize the app's windows; a blue underline
   marks the active app.
-- Action center: dark flyout above the taskbar with Wi-Fi, Bluetooth, Night light and Focus assist quick actions plus a notification count and history link.
+- Action center: dark flyout with notification cards (icon, summary, time,
+  dismiss and Clear all) above a 4-column quick-action grid (All settings,
+  Network, Night light, Focus assist, Wi-Fi, Bluetooth, Screen snip).
 - Show desktop: minimize everything on the workspace, or restore what the
   taskbar hid.
 - Power button: Sleep, Shut down, Restart, Sign out.

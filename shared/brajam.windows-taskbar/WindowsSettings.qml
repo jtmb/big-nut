@@ -202,10 +202,69 @@ Item {
   function toggleNightlight() { root.run("omarchy toggle nightlight"); displayRefresh.restart() }
   function setMirror(on) { root.run("omarchy hyprland monitor internal mirror " + (on ? "on" : "off")); displayRefresh.restart() }
 
+  component SettingsDropdown: Rectangle {
+    id: dropdown
+    property var options: []
+    property int currentIndex: 0
+    property bool expanded: false
+    signal chosen(int index)
+    height: 30
+    color: "#ffffff"
+    border.width: 1
+    border.color: root.separator
+    radius: 2
+
+    Text {
+      x: 10; anchors.verticalCenter: parent.verticalCenter
+      width: parent.width - 34
+      text: dropdown.options[dropdown.currentIndex] !== undefined ? dropdown.options[dropdown.currentIndex] : ""
+      color: root.foreground; font.pixelSize: 12
+      elide: Text.ElideRight
+    }
+    Text {
+      anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter
+      text: "⌄"; color: root.secondary; font.pixelSize: 14
+    }
+    MouseArea {
+      anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+      onClicked: dropdown.expanded = !dropdown.expanded
+    }
+    Rectangle {
+      visible: dropdown.expanded
+      z: 50
+      y: dropdown.height + 2
+      width: dropdown.width
+      height: Math.min(dropdown.options.length, 7) * 28 + 4
+      color: "#ffffff"; border.width: 1; border.color: root.separator; radius: 2
+      Column {
+        y: 2; width: parent.width
+        Repeater {
+          model: dropdown.options
+          delegate: Rectangle {
+            required property var modelData
+            required property int index
+            width: parent.width; height: 28
+            color: optionMouse.containsMouse ? "#e5f1fb" : (index === dropdown.currentIndex ? "#f2f2f2" : "transparent")
+            Text { x: 10; anchors.verticalCenter: parent.verticalCenter; text: modelData; font.pixelSize: 12; color: root.foreground }
+            MouseArea {
+              id: optionMouse
+              anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                dropdown.currentIndex = index
+                dropdown.chosen(index)
+                dropdown.expanded = false
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   OverlayWindow {
     id: panel
     shown: root.opened
-    WlrLayershell.namespace: "golden-gate-settings"
+    WlrLayershell.namespace: "windows-settings"
     MouseArea { anchors.fill: parent; onClicked: root.close() }
 
     Rectangle {
@@ -737,34 +796,37 @@ Item {
                 }
               }
               Rectangle {
-                width: parent.width; height: 68; radius: 2; color: root.group
-                Label { x: 14; y: 13; text: "Scale"; font.pixelSize: 13 }
+                width: parent.width; height: 74; radius: 2; color: root.group
+                z: scaleDropdown.expanded ? 10 : 0
+                Label { x: 14; y: 13; text: "Change the size of text, apps, and other items"; font.pixelSize: 13 }
                 Label {
                   anchors.right: parent.right; anchors.rightMargin: 14; y: 14
                   color: root.secondary; font.pixelSize: 11
                   text: root.displayScale > 0 ? root.formatScale(root.displayScale) : ""
                 }
-                Segment {
-                  x: 14; y: 34; width: parent.width - 28
-                  choices: root.scaleChoices.map(root.formatScale)
-                  selectedIndex: root.scaleIndex
+                SettingsDropdown {
+                  id: scaleDropdown
+                  x: 14; y: 36; width: parent.width - 28
+                  options: root.scaleChoices.map(root.formatScale)
+                  currentIndex: root.scaleIndex
                   onChosen: function(index) { root.displayScalePreset(root.scaleChoices[index]) }
                 }
               }
               Rectangle {
                 width: parent.width; height: 74; radius: 2; color: root.group
+                z: textSizeDropdown.expanded ? 10 : 0
                 Label { x: 14; y: 13; text: "Text size"; font.pixelSize: 13 }
                 Label {
                   anchors.right: parent.right; anchors.rightMargin: 16; y: 14
                   color: root.secondary; font.pixelSize: 11
-                  text: root.textSizeStops[Math.round(textSizeSlider.liveValue)] + " px"
+                  text: root.textSizeStops[root.textSizeIndex] + " px"
                 }
-                SliderControl {
-                  id: textSizeSlider
-                  x: 14; y: 38; width: parent.width - 28
-                  minimum: 0; maximum: root.textSizeStops.length - 1
-                  value: root.textSizeIndex
-                  onReleased: function(value) { root.setTextSize(value) }
+                SettingsDropdown {
+                  id: textSizeDropdown
+                  x: 14; y: 36; width: parent.width - 28
+                  options: root.textSizeStops.map(function(value) { return value + " px" })
+                  currentIndex: root.textSizeIndex
+                  onChosen: function(index) { root.setTextSize(index) }
                 }
               }
               Rectangle {

@@ -126,13 +126,13 @@ PopupWindow {
   function buildTiles() {
     var ids = ["org.gnome.Nautilus", "chromium", "foot", "libreoffice-writer",
                "org.gnome.Papers", "mpv", "omawrite", "omacalc"]
-    var out = [{ calendar: true, name: "Calendar", color: "#0078d7" },
+    var out = [{ calendar: true, wide: true, name: "Calendar", color: "#0078d7" },
                { weather: true, name: "Weather", color: "#0078d7" }]
-    if (root.mediaPlayer) out.push({ media: true, name: "Now playing", color: "#107c10" })
+    if (root.mediaPlayer) out.push({ media: true, wide: true, name: "Now playing", color: "#107c10" })
     for (var i = 0; i < ids.length; i++) {
       var entry = DesktopEntries.byId(ids[i])
       if (!entry || entry.noDisplay) continue
-      out.push({ entry: entry, name: entry.name, color: root.tileColor(entry.id) })
+      out.push({ entry: entry, name: entry.name, wide: entry.id === "libreoffice-writer", color: root.tileColor(entry.id) })
     }
     return out
   }
@@ -443,15 +443,15 @@ PopupWindow {
               text: modelData.title
               color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12; font.weight: Font.DemiBold
             }
-            Grid {
-              columns: 3
-              columnSpacing: 4
-              rowSpacing: 4
+            Flow {
+              width: 308
+              spacing: 4
               Repeater {
                 model: modelData.tiles
                 delegate: Rectangle {
                   required property var modelData
-                  width: 100; height: 100
+                  width: modelData.wide === true ? 204 : 100
+                  height: 100
                   color: modelData.color
                   border.width: tileMouse.containsMouse ? 1 : 0
                   border.color: "#ffffff"

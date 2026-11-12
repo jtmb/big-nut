@@ -20,6 +20,7 @@ BarWidget {
   property var liveNotifications: []
   property var historyNotifications: []
   property var notifications: []
+  property var dismissedKeys: ({})
 
   readonly property string timeText: Qt.formatDateTime(now, "h:mm AP")
   readonly property string dateText: Qt.formatDateTime(now, "M/d/yyyy")
@@ -103,7 +104,7 @@ BarWidget {
     var sources = root.liveNotifications.concat(root.historyNotifications)
     for (var i = 0; i < sources.length && merged.length < 6; i++) {
       var row = sources[i]
-      if (!row || (row.key && seen[row.key])) continue
+      if (!row || (row.key && (seen[row.key] || root.dismissedKeys[row.key]))) continue
       if (row.key) seen[row.key] = true
       merged.push(row)
     }
@@ -131,6 +132,23 @@ BarWidget {
   }
   function quickAction(command) {
     root.bar.run(command)
+    actionRefresh.restart()
+  }
+  function dismissNotification(notification) {
+    if (!notification) return
+    if (notification.key) root.dismissedKeys[notification.key] = true
+    var summary = notification.summary ? String(notification.summary) : ""
+    if (summary) root.bar.run("omarchy-shell notifications dismiss " + Util.shellQuote(summary))
+    root.mergeNotifications()
+    actionRefresh.restart()
+  }
+  function clearNotifications() {
+    for (var i = 0; i < root.notifications.length; i++) {
+      var key = root.notifications[i].key
+      if (key) root.dismissedKeys[key] = true
+    }
+    root.notifications = []
+    root.bar.run("omarchy-shell notifications dismissAll")
     actionRefresh.restart()
   }
 
@@ -236,25 +254,38 @@ BarWidget {
         text: "Notifications"
         color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12; font.weight: Font.DemiBold
       }
-      Text {
-        anchors.right: parent.right; anchors.rightMargin: 16; y: 14
-        text: "Collapse"
-        color: collapseMouse.containsMouse ? "#ffffff" : "#b8b8b8"
-        font.family: "Selawik"; font.pixelSize: 11
-        MouseArea {
-          id: collapseMouse
-          anchors.fill: parent
-          anchors.margins: -4
-          hoverEnabled: true
-          cursorShape: Qt.PointingHandCursor
-          onClicked: root.closeActionCenter()
+      Row {
+        anchors.right: parent.right; anchors.rightMargin: 12; y: 14
+        spacing: 12
+        Text {
+          visible: root.notifications.length > 0
+          text: "Clear all"
+          color: clearMouse.containsMouse ? "#ffffff" : "#b8b8b8"
+          font.family: "Selawik"; font.pixelSize: 11
+          MouseArea {
+            id: clearMouse
+            anchors.fill: parent; anchors.margins: -4
+            hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+            onClicked: root.clearNotifications()
+          }
+        }
+        Text {
+          text: "Collapse"
+          color: collapseMouse.containsMouse ? "#ffffff" : "#b8b8b8"
+          font.family: "Selawik"; font.pixelSize: 11
+          MouseArea {
+            id: collapseMouse
+            anchors.fill: parent; anchors.margins: -4
+            hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+            onClicked: root.closeActionCenter()
+          }
         }
       }
 
       Flickable {
-        x: 16; y: 38
-        width: parent.width - 32
-        height: 146
+        x: 8; y: 38
+        width: parent.width - 16
+        height: 176
         clip: true
         visible: root.notifications.length > 0
         contentHeight: noticeColumn.height
@@ -264,39 +295,69 @@ BarWidget {
           width: parent.width
           spacing: 1
           Repeater {
-          model: root.notifications
-          delegate: Rectangle {
-            required property var modelData
-            width: parent.width; height: 44
-            color: notificationMouse.containsMouse ? "#2f2f2f" : "transparent"
-            Column {
-              x: 4; y: 4; width: parent.width - 60
-              Text {
-                width: parent.width
-                text: modelData.summary || modelData.app || "Notification"
-                color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12
-                elide: Text.ElideRight
+            model: root.notifications
+            delegate: Rectangle {
+              required property var modelData
+              width: parent.width; height: 56
+              color: notificationMouse.containsMouse ? "#2f2f2f" : "transparent"
+
+              Rectangle {
+                x: 8; y: 8; width: 30; height: 30; radius: 2
+                color: "#0078d7"
+                Text {
+                  anchors.centerIn: parent
+                  visible: notificationIcon.status !== Image.Ready
+                  text: "\uf0f3"
+                  color: "#ffffff"; font.family: "Font Awesome 7 Free Solid"; font.pixelSize: 13
+                }
+                Image {
+                  id: notificationIcon
+                  anchors.fill: parent
+                  source: modelData.appIcon && String(modelData.appIcon).length > 0 ? Quickshell.iconPath(String(modelData.appIcon), true) : ""
+                  fillMode: Image.PreserveAspectFit
+                }
+              }
+              Column {
+                x: 46; y: 8; width: parent.width - 96
+                Text {
+                  width: parent.width
+                  text: modelData.summary || modelData.app || "Notification"
+                  color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12
+                  elide: Text.ElideRight
+                }
+                Text {
+                  width: parent.width
+                  text: modelData.body || String(modelData.app || "")
+                  color: "#b8b8b8"; font.family: "Selawik"; font.pixelSize: 11
+                  elide: Text.ElideRight
+                }
               }
               Text {
-                width: parent.width
-                text: modelData.body || ""
-                color: "#b8b8b8"; font.family: "Selawik"; font.pixelSize: 11
-                elide: Text.ElideRight
+                anchors.right: parent.right; anchors.rightMargin: 24; y: 8
+                text: Qt.formatDateTime(new Date((modelData.ts || 0) * 1000), "h:mm AP")
+                color: "#8a8a8a"; font.family: "Selawik"; font.pixelSize: 10
+              }
+              Text {
+                z: 2
+                anchors.right: parent.right; anchors.rightMargin: 7; y: 6
+                text: "×"
+                color: dismissMouse.containsMouse ? "#ffffff" : "#9a9a9a"
+                font.family: "Selawik"; font.pixelSize: 15
+                MouseArea {
+                  id: dismissMouse
+                  anchors.fill: parent; anchors.margins: -6
+                  hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                  onClicked: root.dismissNotification(modelData)
+                }
+              }
+              MouseArea {
+                id: notificationMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: { root.closeActionCenter(); root.bar.run("omarchy-shell notifications showHistory") }
               }
             }
-            Text {
-              anchors.right: parent.right; anchors.rightMargin: 4; y: 4
-              text: Qt.formatDateTime(new Date((modelData.ts || 0) * 1000), "h:mm AP")
-              color: "#8a8a8a"; font.family: "Selawik"; font.pixelSize: 10
-            }
-            MouseArea {
-              id: notificationMouse
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onClicked: { root.closeActionCenter(); root.bar.run("omarchy-shell notifications showHistory") }
-            }
-          }
           }
         }
       }
@@ -307,20 +368,15 @@ BarWidget {
         text: root.notificationCount > 0 ? root.notificationCount + " new notification" + (root.notificationCount === 1 ? "" : "s") : "No new notifications"
         color: "#b8b8b8"; font.family: "Selawik"; font.pixelSize: 12
       }
-      Rectangle {
-        x: 16; y: 196; width: parent.width - 32; height: 34
-        color: historyMouse.containsMouse ? "#3a3a3a" : "#2b2b2b"
-        border.width: 1; border.color: "#3f3f3f"
-        Text {
-          x: 10; anchors.verticalCenter: parent.verticalCenter
-          text: "Open notification history"
-          color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12
-        }
+      Text {
+        x: 16; y: 218
+        text: "Notification history"
+        color: historyMouse.containsMouse ? "#ffffff" : "#9a9a9a"
+        font.family: "Selawik"; font.pixelSize: 11
         MouseArea {
           id: historyMouse
-          anchors.fill: parent
-          hoverEnabled: true
-          cursorShape: Qt.PointingHandCursor
+          anchors.fill: parent; anchors.margins: -4
+          hoverEnabled: true; cursorShape: Qt.PointingHandCursor
           onClicked: { root.closeActionCenter(); root.bar.run("omarchy-shell notifications showHistory") }
         }
       }
