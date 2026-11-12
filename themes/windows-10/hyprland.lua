@@ -21,6 +21,17 @@ hl.config({
 
 o.transparent_window(".*", "1.0 override 1.0 override")
 
+-- Ask GTK apps for server-side decorations so the Windows caption bar can own
+-- their frame. GTK3 apps that implement xdg-decoration (gcr-viewer, for one)
+-- honour this; GTK4/libadwaita apps always draw their own header bar. Those
+-- CSD apps skip the plugin bar so the window never shows two title bars.
+hl.env("GTK_CSD", "0")
+hl.window_rule({
+  name = "windows-csd-apps",
+  match = { class = "^(org\\.gnome\\..*|chromium|chrome-.*|com\\.github\\.PintaProject\\.Pinta|libreoffice-.*|soffice)$" },
+  ["winbars:no_bar"] = true,
+})
+
 -- Windows 10 caption bars. Omarchy's stock titlebar plugin draws floating
 -- workspace bars; it is loaded and disabled here so the Windows fork can own
 -- every window without two decorations fighting over the same edge.

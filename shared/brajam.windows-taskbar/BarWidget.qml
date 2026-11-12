@@ -164,7 +164,7 @@ BarWidget {
     root.jumpOpen = true
     root.recentFiles = []
     if (item && !recentProc.running) {
-      recentProc.command = ["python3", Quickshell.env("HOME") + "/.config/omarchy/themes/windows-10/recent-files.py", item.name]
+      recentProc.command = ["python3", Quickshell.env("HOME") + "/.config/omarchy/themes/windows-10/recent-files.py", item.key, item.name]
       recentProc.running = true
     }
   }

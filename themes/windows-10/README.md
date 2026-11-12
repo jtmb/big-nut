@@ -29,6 +29,11 @@ metric-compatible Segoe UI substitute.
   builds it against the installed Hyprland headers into
   `~/.local/share/windows-10-titlebars/titlebars.so`, loads it as `winbars`,
   and disables the stock `hyprbars` plugin against double decorations.
+- GTK: `GTK_CSD=0` is set through Hyprland and
+  `~/.config/environment.d/90-windows-10.conf`. GTK3 apps that support
+  xdg-decoration get the Windows caption bar; GTK4/libadwaita apps keep their
+  own header bar and are excluded by a no-bar window rule so they never show
+  two title bars.
 
 ## Install and apply
 
@@ -64,7 +69,9 @@ two-line clock, Start rail/tile proportions, square surfaces, 30px white window
 caption bars with left-aligned titles, square min/max/close buttons, the
 `#e81123` red close hover, light Settings palette and `#0078d7` accent follow
 Windows 10 at 100% scale. Applications still draw their own client-area chrome
-and menus, and GTK apps keep their own client-side header bars. Start's Settings button opens
+and menus. GTK3 apps with xdg-decoration support use the Windows caption bar;
+GTK4/libadwaita apps keep one app-drawn header bar because they cannot be
+forced into server-side decorations. Start's Settings button opens
 the Windows Settings window (Personalization, Taskbar, Display, Background and
 Multitasking), and the action center has a working quick-actions flyout. The
 reference screenshots used while building this were the
@@ -75,7 +82,7 @@ guidance.
 Remaining deviations: the action center embeds up to six current/history
 notifications and links to the full history; the Calendar, Weather and MPRIS Now Playing Start
 tiles are live while other application-owned tiles remain static; taskbar jump lists
-provide open, pin/unpin, close-all and recent XDG documents; Settings has
+provide open, pin/unpin, close-all and live recent XDG documents; Settings has
 Home, Accounts, Time & language, Privacy & security, Update & security,
 Personalization, Taskbar, Display, Background and Multitasking pages. These
 are Linux limitations of the current Omarchy surfaces, not hidden fake controls.

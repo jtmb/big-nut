@@ -15,6 +15,7 @@ CONFIG = Path.home() / ".config/omarchy/shell.json"
 STATE = Path.home() / ".local/state/omarchy/windows-10-ui.json"
 FONTS = Path.home() / ".local/share/fonts/selawik"
 TITLEBARS = Path.home() / ".local/share/windows-10-titlebars/titlebars.so"
+ENV_DROPIN = Path.home() / ".config/environment.d/90-windows-10.conf"
 THEME_DIR = Path(__file__).resolve().parent
 KEYS = ("bar", "dock", "plugins", "disabledPlugins", "cloneSourceRestores")
 PINNED = ["org.gnome.Nautilus", "chromium", "foot", "libreoffice-writer"]
@@ -54,6 +55,27 @@ def install_fonts():
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
+def install_gtk_environment():
+    """Ask GTK apps for server-side decorations; ignored by GTK4/libadwaita."""
+    if os.environ.get("WINDOWS10_SKIP_ENV"):
+        return
+    ENV_DROPIN.parent.mkdir(parents=True, exist_ok=True)
+    text = "GTK_CSD=0\n"
+    if not ENV_DROPIN.is_file() or ENV_DROPIN.read_text() != text:
+        ENV_DROPIN.write_text(text)
+    subprocess.run(["systemctl", "--user", "set-environment", "GTK_CSD=0"],
+                   check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def remove_gtk_environment():
+    if os.environ.get("WINDOWS10_SKIP_ENV"):
+        return
+    if ENV_DROPIN.is_file():
+        ENV_DROPIN.unlink()
+    subprocess.run(["systemctl", "--user", "unset-environment", "GTK_CSD"],
+                   check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
 def install_titlebars():
     """Build the hover-capable Windows titlebar fork against live Hyprland."""
     if os.environ.get("WINDOWS10_SKIP_TITLEBARS"):
@@ -75,6 +97,7 @@ def install_titlebars():
 def apply(config):
     before = snapshot(config)
     install_fonts()
+    install_gtk_environment()
     install_titlebars()
 
     bar = copy.deepcopy(config.get("bar", {}))
@@ -138,6 +161,7 @@ def rollback(config):
     save(CONFIG, config)
     # Hyprland keeps a loaded plugin across theme switches; do not leave the
     # white Windows caption bars on the next theme.
+    remove_gtk_environment()
     subprocess.run(["hyprctl", "plugin", "unload", str(TITLEBARS)],
                    check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     subprocess.run(["hyprctl", "eval",
@@ -156,6 +180,7 @@ def main():
     if slug == THEME:
         if STATE.is_file():
             install_fonts()
+            install_gtk_environment()
             install_titlebars()
             state = json.loads(STATE.read_text())
             if state.get("slug") == THEME:

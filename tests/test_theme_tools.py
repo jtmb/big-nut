@@ -51,6 +51,9 @@ class ThemeToolsTest(unittest.TestCase):
         hyprctl = self.home / "bin/hyprctl"
         hyprctl.write_text("#!/bin/sh\nexit 0\n")
         hyprctl.chmod(0o755)
+        systemctl = self.home / "bin/systemctl"
+        systemctl.write_text("#!/bin/sh\nexit 0\n")
+        systemctl.chmod(0o755)
         self.env = dict(os.environ, HOME=str(self.home), XDG_STATE_HOME=str(self.home / ".local/state"), OMARCHY_PATH="/usr/share/omarchy",
                         WINDOWS10_SKIP_TITLEBARS="1",
                         PATH=str(stub.parent) + os.pathsep + os.environ["PATH"])
@@ -273,6 +276,9 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn('hover_fg_color = "#ffffff"', lua)
         self.assertIn("winbars", lua)
         self.assertIn("hyprbars = { enabled = false }", lua)
+        self.assertIn('hl.env("GTK_CSD", "0")', lua)
+        self.assertIn("windows-csd-apps", lua)
+        self.assertIn("winbars:no_bar", lua)
         source = (WINDOWS / "titlebars/main.cpp").read_text()
         self.assertIn('"hover_bg_color"', source)
         self.assertIn('"hover_fg_color"', source)
@@ -287,22 +293,27 @@ class ThemeToolsTest(unittest.TestCase):
         share.mkdir(parents=True)
         (share / "recently-used.xbel").write_text(
             '<?xml version="1.0"?>'
-            '<xbel xmlns="http://www.freedesktop.org/standards/desktop-bookmarks" '
+            '<xbel version="1.0" '
             'xmlns:bookmark="http://www.freedesktop.org/standards/desktop-bookmarks">'
             '<bookmark href="file:///home/user/report.odt" modified="2026-01-02T00:00:00Z">'
             '<info><metadata owner="http://freedesktop.org">'
-            '<bookmark:application name="LibreOffice Writer"/>'
+            '<bookmark:applications><bookmark:application name="LibreOffice 26.8" '
+            'exec="&apos;soffice %u&apos;"/></bookmark:applications>'
             '</metadata></info></bookmark>'
             '<bookmark href="file:///home/user/photo.jpg" modified="2026-01-03T00:00:00Z">'
             '<info><metadata owner="http://freedesktop.org">'
-            '<bookmark:application name="Files"/>'
+            '<bookmark:applications><bookmark:application name="Nautilus" '
+            'exec="&apos;nautilus %u&apos;"/></bookmark:applications>'
             '</metadata></info></bookmark>'
             '</xbel>')
-        result = subprocess.run(["python3", str(WINDOWS / "recent-files.py"), "Files"],
+        result = subprocess.run(["python3", str(WINDOWS / "recent-files.py"), "libreoffice-writer", "LibreOffice Writer"],
                                 env=self.env, check=True, capture_output=True, text=True)
         rows = json.loads(result.stdout)
-        self.assertEqual(len(rows), 1)
-        self.assertEqual(rows[0]["title"], "photo.jpg")
+        self.assertEqual([row["title"] for row in rows], ["report.odt"])
+        result = subprocess.run(["python3", str(WINDOWS / "recent-files.py"), "org.gnome.Nautilus", "Files"],
+                                env=self.env, check=True, capture_output=True, text=True)
+        rows = json.loads(result.stdout)
+        self.assertEqual([row["title"] for row in rows], ["photo.jpg"])
 
     def test_windows_taskbar_pin_script(self):
         self.run_tool("ui-hook.py", "windows-10", theme=WINDOWS)
@@ -356,12 +367,15 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn("brajam.dock", config["disabledPlugins"])
         self.assertEqual(config["windowsTaskbar"]["pinned"],
                          ["org.gnome.Nautilus", "chromium", "foot", "libreoffice-writer"])
+        env_file = self.home / ".config/environment.d/90-windows-10.conf"
+        self.assertEqual(env_file.read_text(), "GTK_CSD=0\n")
 
         self.run_tool("ui-hook.py", "gruvbox", theme=WINDOWS)
         after = self.read_config()
         for key, value in self.before.items():
             self.assertEqual(after[key], value)
         self.assertFalse((self.home / ".local/state/omarchy/windows-10-ui.json").exists())
+        self.assertFalse(env_file.exists())
 
     def test_dark_outline_setting_preserves_light_dock_and_pins(self):
         for action, expected in [("on", True), ("off", False)]:

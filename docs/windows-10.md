@@ -20,11 +20,11 @@ default `#0078d7` accent.
 | Taskbar icons | 24px in ~40px slots | 24px in 40px slots | `/tmp/opencode/final4-half.png` |
 | Taskbar order | Start, search, Task View, apps, tray, clock, action center | same order | `/tmp/opencode/final-desktop2-half.png` |
 | Clock | two lines, time over date | two lines, `h:mm AP` over `M/d/yyyy` | `/tmp/opencode/final-desktop2-half.png` |
-| Start size | about 640×600 at 1080p | 640×600 | `/tmp/opencode/start-recent-half.png` |
+| Start size | about 640×600 at 1080p | 640×600 | `/tmp/opencode/compare-start-final.png` |
 | Start palette | dark `#1f1f1f` by default | `#1f1f1f` with `#191919` rail | `start-recent-half.png` |
 | Start content | Recently added, All apps, tiles, rail, power | Recently added, All apps, tiles, rail, power | `start-recent-half.png` |
-| Titlebar | 30px white bar, square caption buttons, red `#e81123` close hover | 30px white bar, left-aligned Selawik title, square buttons, red close hover | `/tmp/opencode/compare-titlebar-hover.png` |
-| Settings | light page, `#f2f2f2` nav, `#0078d7` accent | same palette; Home/Accounts/Time/Privacy/Update plus the existing pages | `/tmp/opencode/settings-home3.png`, `live-displays.png` |
+| Titlebar | 30px white bar, square caption buttons, red `#e81123` close hover | 30px white bar, left-aligned Selawik title, square buttons, red close hover; GTK3 SSD apps match, GTK4 CSD apps keep one app-drawn header | `/tmp/opencode/compare-titlebar-gtk.png` |
+| Settings | light page, `#f2f2f2` nav, `#0078d7` accent | same palette; Home/Accounts/Time/Privacy/Update plus the existing pages | `/tmp/opencode/compare-settings-final.png` |
 | Action center | dark flyout, notifications above a 4-column quick-action grid | same structure; up to six live/history notifications, 4-column grid, active tiles blue | `/tmp/opencode/compare-action-dark3.png` |
 | Jump list | taskbar app context menu with recent files | right-click/`jump <id>` menu with Open, Pin/Unpin, Close all and recent documents from the XDG recent store | `/tmp/opencode/jump-final-half.png` |
 | Live tiles | Calendar, Weather and media update | Calendar shows the live date; Weather refreshes every 15 minutes; a Now Playing tile follows MPRIS players | `/tmp/opencode/start-final2.png` |
@@ -35,18 +35,34 @@ The title bars come from `themes/windows-10/titlebars/`, a fork of
 to `~/.local/share/windows-10-titlebars/titlebars.so`, loads it as `winbars`,
 and disables Omarchy's stock `hyprbars` so only one decoration owns the edge.
 
+The theme also sets `GTK_CSD=0` (Hyprland environment, an
+`environment.d/90-windows-10.conf` drop-in and the systemd user environment) so
+GTK apps request server-side decorations. Measured results:
+
+- **gcr-viewer (GTK3, honours xdg-decoration):** one Windows 30px bar with
+  left title, square min/max/close and the red close hover.
+  Evidence `/tmp/opencode/compare-titlebar-gtk.png`.
+- **Nautilus and Evince (GTK4/libadwaita):** always draw their own header bar;
+  `GTK_CSD=0` cannot remove it. A `winbars:no_bar` window rule
+  (`^org\.gnome\..*`) suppresses the plugin bar for these classes so they do
+  not show two title bars.
+- **Chromium, Pinta and LibreOffice:** the same no-bar rule prevents duplicates
+  because they draw their own client-side chrome.
+- `GTK_CSD` reaches apps spawned by Hyprland immediately and launcher apps after
+  the next login, when `environment.d` is re-read.
+
 Live checks: `plugin:winbars:enabled` → true, `bar_height` → 30,
 `plugin:hyprbars:enabled` → false; the monitor is eDP-1 at 2160×1440, scale 2
 (200%), 60 Hz. Tests: `python3 -m unittest discover -s tests -v` → 22/22.
 
 ## Side-by-side comparisons
 
-- Taskbar/desktop: `/tmp/opencode/compare-taskbar-final.png` (same black-taskbar layout; the reference uses a black wallpaper and the 1607 search placeholder)
-- Start (like-for-like dark): `/tmp/opencode/compare-start6.png`
-- Settings: `/tmp/opencode/compare-settings4.png`
+- Taskbar/desktop: `/tmp/opencode/compare-taskbar-final2.png` (same black-taskbar layout; the reference uses a black wallpaper and the 1607 search placeholder)
+- Start (like-for-like dark): `/tmp/opencode/compare-start-final.png`
+- Settings: `/tmp/opencode/compare-settings-final.png`
 - Action center (like-for-like dark): `/tmp/opencode/compare-action-dark3.png`
-- Titlebar (default white, like-for-like): `/tmp/opencode/compare-titlebar-default.png`
-- Titlebar close hover: `/tmp/opencode/compare-titlebar-hover.png`
+- Titlebar on a GTK app + close hover: `/tmp/opencode/compare-titlebar-gtk.png`
+- Titlebar default-white reference: `/tmp/opencode/compare-titlebar-default.png`
 
 The taskbar, Start and action-center comparisons use dark Windows mode references with black surfaces, matching Big Nut's defaults. The wallpaper in the full desktop capture is an original drawing, so the taskbar strip comparison is the like-for-like surface comparison. The titlebar comparison uses a Windows 10 About dialog with a default white titlebar; it has one close button because dialogs do not show minimize/maximize. The accent-colored Settings capture documents the reference's custom accent, not Big Nut's palette.
 
@@ -57,16 +73,18 @@ The taskbar, Start and action-center comparisons use dark Windows mode reference
   database view.
 - Calendar, Weather and MPRIS Now Playing tiles are live. Other tiles are
   static because their feeds are application-owned. Jump lists include recent
-  XDG documents; the live store on this machine is empty, so the helper is
-  covered by a synthetic-XBEL test.
+  XDG documents. The live store was populated by opening a real document in
+  LibreOffice Writer and verified through the jump-list Recent row.
 - Settings provides Home, Accounts, Time & language, Privacy & security,
   Update & security, Personalization, Taskbar, Display, Background and
   Multitasking pages. The actions behind the new categories are real Omarchy
   commands or panels, not Windows services.
-- The custom caption bar applies to server-decorated windows (Foot, most
-  toolkits). GTK apps such as Nautilus and the OpenCode terminal draw their own
-  client-side header bars, which the theme cannot replace without changing the
-  application; those bars are gray rather than Windows white.
+- GTK4/libadwaita apps (Nautilus, Evince, Pinta) always draw their own header
+  bars even with `GTK_CSD=0`; the theme suppresses its own bar for those classes
+  so there is one header, but it is the app's header rather than a Windows one.
+  GTK3 apps that honour xdg-decoration (gcr-viewer) get the Windows bar.
+- Jump-list Recent rows are live: the helper reads the real XDG recent store.
+  The LO Writer row was verified with `~/Documents/Windows 10 notes.txt`.
 - Inactive caption buttons use `#d0d0d0` rather than Windows' exact
   `#cccccc`; the difference is a few RGB points and only shows on unfocused
   server-decorated windows.
