@@ -14,9 +14,23 @@ THEME = "windows-10"
 CONFIG = Path.home() / ".config/omarchy/shell.json"
 STATE = Path.home() / ".local/state/omarchy/windows-10-ui.json"
 FONTS = Path.home() / ".local/share/fonts/selawik"
+THEME_DIR = Path(__file__).resolve().parent
 TITLEBARS = Path.home() / ".local/share/windows-10-titlebars/titlebars.so"
 ENV_DROPIN = Path.home() / ".config/environment.d/90-windows-10.conf"
-THEME_DIR = Path(__file__).resolve().parent
+GTK_SOURCE = THEME_DIR / "gtk"
+GTK_STATE = Path.home() / ".local/state/omarchy/windows-10-gtk.json"
+GTK_FILES = (
+    (GTK_SOURCE / "gtk-3.0/gtk.css", Path.home() / ".config/gtk-3.0/gtk.css"),
+    (GTK_SOURCE / "settings.ini", Path.home() / ".config/gtk-3.0/settings.ini"),
+    (GTK_SOURCE / "gtk-4.0/gtk.css", Path.home() / ".config/gtk-4.0/gtk.css"),
+    (GTK_SOURCE / "settings.ini", Path.home() / ".config/gtk-4.0/settings.ini"),
+)
+GTK_SETTINGS = (
+    ("org.gnome.desktop.interface", "gtk-theme", "'Adwaita'"),
+    ("org.gnome.desktop.interface", "font-name", "'Selawik 10'"),
+    ("org.gnome.desktop.interface", "color-scheme", "'prefer-light'"),
+    ("org.gnome.desktop.wm.preferences", "button-layout", "'menu:minimize,maximize,close'"),
+)
 KEYS = ("bar", "dock", "plugins", "disabledPlugins", "cloneSourceRestores")
 PINNED = ["org.gnome.Nautilus", "chromium", "foot", "libreoffice-writer"]
 
@@ -53,6 +67,68 @@ def install_fonts():
     if changed:
         subprocess.run(["fc-cache", "-f", str(FONTS)], check=False,
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def gsettings(*args):
+    if os.environ.get("WINDOWS10_SKIP_GTK_GSETTINGS"):
+        return ""
+    result = subprocess.run(["gsettings", *args], check=False,
+                            capture_output=True, text=True)
+    return result.stdout.strip()
+
+
+def install_gtk_style():
+    """Install square, light GTK overrides and Windows caption layout."""
+    if not (GTK_SOURCE / "gtk-3.0/gtk.css").is_file():
+        return
+    state = {}
+    if GTK_STATE.is_file():
+        try:
+            state = json.loads(GTK_STATE.read_text())
+        except (OSError, ValueError):
+            state = {}
+    files = state.get("files")
+    if not isinstance(files, dict):
+        files = {}
+        for _, target in GTK_FILES:
+            files[str(target)] = target.read_text() if target.is_file() else None
+    gtk_settings = state.get("gsettings")
+    if not isinstance(gtk_settings, dict):
+        gtk_settings = {}
+        for schema, key, _ in GTK_SETTINGS:
+            gtk_settings[f"{schema}:{key}"] = gsettings("get", schema, key)
+    for source, target in GTK_FILES:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+    if not os.environ.get("WINDOWS10_SKIP_GTK_GSETTINGS"):
+        for schema, key, value in GTK_SETTINGS:
+            subprocess.run(["gsettings", "set", schema, key, value], check=False,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    save(GTK_STATE, {"files": files, "gsettings": gtk_settings})
+
+
+def remove_gtk_style():
+    if not GTK_STATE.is_file():
+        return
+    try:
+        state = json.loads(GTK_STATE.read_text())
+    except (OSError, ValueError):
+        GTK_STATE.unlink()
+        return
+    for name, original in (state.get("files") or {}).items():
+        target = Path(name)
+        if original is None:
+            target.unlink(missing_ok=True)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(original)
+    if not os.environ.get("WINDOWS10_SKIP_GTK_GSETTINGS"):
+        for name, value in (state.get("gsettings") or {}).items():
+            schema, key = name.split(":", 1)
+            if value:
+                subprocess.run(["gsettings", "set", schema, key, value], check=False,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    GTK_STATE.unlink()
 
 
 def install_gtk_environment():
@@ -97,6 +173,7 @@ def install_titlebars():
 def apply(config):
     before = snapshot(config)
     install_fonts()
+    install_gtk_style()
     install_gtk_environment()
     install_titlebars()
 
@@ -161,6 +238,7 @@ def rollback(config):
     save(CONFIG, config)
     # Hyprland keeps a loaded plugin across theme switches; do not leave the
     # white Windows caption bars on the next theme.
+    remove_gtk_style()
     remove_gtk_environment()
     subprocess.run(["hyprctl", "plugin", "unload", str(TITLEBARS)],
                    check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -180,6 +258,7 @@ def main():
     if slug == THEME:
         if STATE.is_file():
             install_fonts()
+            install_gtk_style()
             install_gtk_environment()
             install_titlebars()
             state = json.loads(STATE.read_text())

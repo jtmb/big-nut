@@ -32,10 +32,12 @@ metric-compatible Segoe UI substitute.
   `~/.local/share/windows-10-titlebars/titlebars.so`, loads it as `winbars`,
   and disables the stock `hyprbars` plugin against double decorations.
 - GTK: `GTK_CSD=0` is set through Hyprland and
-  `~/.config/environment.d/90-windows-10.conf`. GTK3 apps that support
-  xdg-decoration get the Windows caption bar; GTK4/libadwaita apps keep their
-  own header bar and are excluded by a no-bar window rule so they never show
-  two title bars.
+  `~/.config/environment.d/90-windows-10.conf`. `gtk/` contains GTK3/GTK4 CSS
+  and a settings file that make header bars white, square and Windows-ordered
+  (min/max/close, Selawik), with the red close hover. The hook installs and
+  restores them, plus the matching gsettings values. GTK4/libadwaita apps keep
+  their own circular window controls; those classes are excluded from the
+  server-side bar so they never show two title bars.
 
 ## Install and apply
 

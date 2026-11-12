@@ -1,0 +1,351 @@
+/* Windows 10 look for GTK apps.
+ *
+ * Deliberately a small override sheet rather than a full GTK theme: the
+ * Windows taskbar, Start menu and caption bars are owned by the Omarchy
+ * plugins, while GTK only needs Windows colours, square controls and Windows
+ * caption layout. Values follow the Windows 10 light theme: white title bars,
+ * #0078d7 selection, #e81123 close hover and Segoe UI metrics via Selawik.
+ */
+
+@define-color theme_selected_bg_color #0078d7;
+@define-color theme_selected_fg_color #ffffff;
+@define-color accent_bg_color #0078d7;
+@define-color accent_color #ffffff;
+@define-color accent_fg_color #ffffff;
+@define-color window_bg_color #ffffff;
+@define-color window_fg_color #000000;
+@define-color view_bg_color #ffffff;
+@define-color view_fg_color #000000;
+@define-color headerbar_bg_color #ffffff;
+@define-color headerbar_fg_color #000000;
+@define-color headerbar_border_color #d0d0d0;
+@define-color headerbar_backdrop_color #ffffff;
+@define-color sidebar_bg_color #f2f2f2;
+@define-color card_bg_color #f2f2f2;
+@define-color popover_bg_color #ffffff;
+@define-color popover_fg_color #000000;
+@define-color destructive_bg_color #e81123;
+@define-color destructive_fg_color #ffffff;
+
+window,
+.background {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* Windows 10 title bars: white, square, 30px, thin gray rule. */
+headerbar,
+.titlebar {
+  min-height: 30px;
+  padding: 0 4px;
+  border-radius: 0;
+  border-bottom: 1px solid #d0d0d0;
+  background-color: #ffffff;
+  background-image: none;
+  box-shadow: none;
+  color: #000000;
+}
+
+headerbar:backdrop,
+.titlebar:backdrop {
+  background-color: #ffffff;
+  color: #000000;
+  border-bottom-color: #d0d0d0;
+}
+
+headerbar .title,
+.titlebar .title,
+windowtitle {
+  padding-left: 8px;
+  padding-right: 8px;
+  color: #000000;
+  font-family: "Selawik";
+  font-size: 12px;
+  font-weight: normal;
+}
+
+headerbar .subtitle,
+.titlebar .subtitle {
+  color: #666666;
+  font-family: "Selawik";
+  font-size: 11px;
+}
+
+/* Caption buttons: square 46x30 like Windows, not GNOME circles. */
+headerbar button.titlebutton,
+headerbar windowcontrols button,
+.titlebar button.titlebutton,
+windowcontrols button {
+  min-width: 46px;
+  min-height: 30px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  color: #000000;
+  -gtk-icon-shadow: none;
+}
+
+headerbar button.titlebutton:hover,
+headerbar windowcontrols button:hover,
+.titlebar button.titlebutton:hover,
+windowcontrols button:hover {
+  background-color: #e5e5e5;
+  color: #000000;
+}
+
+headerbar button.titlebutton.close:hover,
+headerbar windowcontrols button.close:hover,
+.titlebar button.titlebutton.close:hover,
+windowcontrols button.close:hover {
+  background-color: #e81123;
+  color: #ffffff;
+}
+
+headerbar button.titlebutton.close:active,
+headerbar windowcontrols button.close:active,
+.titlebar button.titlebutton.close:active,
+windowcontrols button.close:active {
+  background-color: #f1707a;
+  color: #ffffff;
+}
+
+headerbar button,
+headerbar menubutton,
+.titlebar button {
+  border-radius: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  color: #000000;
+}
+
+headerbar button:hover,
+headerbar menubutton:hover,
+.titlebar button:hover {
+  background-color: #e5f1fb;
+  border-color: #0078d7;
+}
+
+/* Square window corners and controls. */
+window,
+window.csd,
+window.csd > decoration,
+decoration {
+  border-radius: 0;
+}
+
+button {
+  border-radius: 0;
+  border: 1px solid #adadad;
+  background-image: none;
+  background-color: #e1e1e1;
+  color: #000000;
+  box-shadow: none;
+}
+
+button:hover {
+  background-color: #e5f1fb;
+  border-color: #0078d7;
+  color: #000000;
+}
+
+button:active,
+button:checked {
+  background-color: #cce4f7;
+  border-color: #005499;
+  color: #000000;
+}
+
+button:disabled {
+  background-color: #f0f0f0;
+  border-color: #d0d0d0;
+  color: #999999;
+}
+
+entry,
+spinbutton,
+searchentry {
+  border-radius: 0;
+  border: 1px solid #7a7a7a;
+  background-color: #ffffff;
+  color: #000000;
+  box-shadow: none;
+}
+
+entry:focus,
+spinbutton:focus,
+searchentry:focus {
+  border-color: #0078d7;
+  box-shadow: inset 0 0 0 1px #0078d7;
+}
+
+selection,
+*:selected {
+  background-color: #0078d7;
+  color: #ffffff;
+}
+
+/* File lists and Settings use the pale Windows selection. */
+row:selected,
+list row:selected,
+.view:selected {
+  background-color: #cce8ff;
+  color: #000000;
+}
+
+.header-bar,
+.card,
+.boxed-list {
+  border-radius: 0;
+}
+
+switch:checked {
+  background-color: #0078d7;
+}
+
+scale highlight,
+progressbar progress {
+  background-color: #0078d7;
+}
+
+scrollbar slider {
+  border-radius: 0;
+  background-color: #c0c0c0;
+}
+
+menu,
+popover,
+.popover {
+  border-radius: 0;
+  border: 1px solid #c0c0c0;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+tooltip {
+  border-radius: 0;
+  background-color: #ffffff;
+  color: #000000;
+  border: 1px solid #767676;
+}
+
+/* libadwaita's window controls use child selectors; match them explicitly. */
+window.csd headerbar windowcontrols > button,
+window.csd .titlebar windowcontrols > button,
+window.csd headerbar button.titlebutton,
+window.csd .titlebar button.titlebutton {
+  min-width: 46px;
+  min-height: 30px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  color: #000000;
+}
+
+window.csd headerbar windowcontrols > button:hover,
+window.csd .titlebar windowcontrols > button:hover,
+window.csd headerbar button.titlebutton:hover,
+window.csd .titlebar button.titlebutton:hover {
+  background-color: #e5e5e5;
+  color: #000000;
+}
+
+window.csd headerbar windowcontrols > button.close:hover,
+window.csd .titlebar windowcontrols > button.close:hover,
+window.csd headerbar button.titlebutton.close:hover,
+window.csd .titlebar button.titlebutton.close:hover {
+  background-color: #e81123;
+  color: #ffffff;
+}
+
+window.csd headerbar windowcontrols > button.close:active,
+window.csd .titlebar windowcontrols > button.close:active,
+window.csd headerbar button.titlebutton.close:active,
+window.csd .titlebar button.titlebutton.close:active {
+  background-color: #f1707a;
+  color: #ffffff;
+}
+
+/* Some apps draw a plain .close button instead of windowcontrols. */
+window.csd headerbar button.close,
+window.csd .titlebar button.close,
+window.csd headerbar button.circular,
+window.csd .titlebar button.circular,
+window.csd headerbar button.flat.circular,
+window.csd .titlebar button.flat.circular {
+  min-width: 46px;
+  min-height: 30px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  color: #000000;
+}
+
+window.csd headerbar button.close:hover,
+window.csd .titlebar button.close:hover {
+  background-color: #e81123;
+  color: #ffffff;
+}
+
+window.csd headerbar button.circular:hover,
+window.csd .titlebar button.circular:hover,
+window.csd headerbar button.flat.circular:hover,
+window.csd .titlebar button.flat.circular:hover {
+  background-color: #e5e5e5;
+  color: #000000;
+}
+
+
+/* Last word on caption buttons: some libadwaita apps use plain circular
+   buttons rather than windowcontrols. */
+headerbar windowcontrols > button,
+.titlebar windowcontrols > button,
+windowcontrols > button,
+headerbar button.circular,
+.titlebar button.circular,
+button.circular,
+headerbar button.close,
+.titlebar button.close {
+  border-radius: 0;
+  min-width: 46px;
+  min-height: 30px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  color: #000000;
+}
+
+headerbar windowcontrols > button:hover,
+.titlebar windowcontrols > button:hover,
+windowcontrols > button:hover,
+headerbar button.circular:hover,
+.titlebar button.circular:hover,
+button.circular:hover,
+headerbar button.close:hover,
+.titlebar button.close:hover {
+  background: #e5e5e5;
+  color: #000000;
+}
+
+headerbar windowcontrols > button.close:hover,
+.titlebar windowcontrols > button.close:hover,
+windowcontrols > button.close:hover,
+headerbar button.close:hover,
+.titlebar button.close:hover {
+  background: #e81123;
+  color: #ffffff;
+}

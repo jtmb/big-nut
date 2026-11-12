@@ -23,13 +23,22 @@ default `#0078d7` accent.
 | Start size | about 640×600 at 1080p | 640×600 | `/tmp/opencode/compare-start-final.png` |
 | Start palette | dark `#1f1f1f` by default | `#1f1f1f` with `#191919` rail | `start-recent-half.png` |
 | Start content | Recently added, All apps, grouped medium/wide/large tiles, rail, power | Recently added, All apps, grouped medium/wide/large tiles (Life at a glance, Productivity, Explore), rail, power | `/tmp/opencode/compare-start-large.png` |
-| Titlebar | 30px white bar, square caption buttons, red `#e81123` close hover | 30px white bar, left-aligned Selawik title, square buttons, red close hover; GTK3 SSD apps match, GTK4 CSD apps keep one app-drawn header | `/tmp/opencode/compare-titlebar-gtk.png` |
+| Titlebar | 30px white bar, square caption buttons, red `#e81123` close hover | 30px white bar, square buttons, red close hover on server-decorated windows; GTK apps adopt white bars/min-max-close via CSS, libadwaita keeps circular controls | `/tmp/opencode/compare-gtk-style.png` |
 | Settings | drop-down scale, text size, display resolution, orientation | drop-down scale, text size, resolution and orientation, brightness, Night Shift; same sidebar order | `/tmp/opencode/compare-settings-resolution.png` |
 | Action center | dark flyout, notification cards above a 4-column quick-action grid | live cards with real app icons/glyphs, summary, app, time, click-to-invoke, dismiss and Clear all; dismissed keys persist | `/tmp/opencode/compare-action-icons.png` |
 | Jump list | taskbar app context menu with recent files | right-click/`jump <id>` menu with Open, Pin/Unpin, Close all and recent documents from the XDG recent store | `/tmp/opencode/jump-final-half.png` |
 | Live tiles | Calendar, Weather and media update | Calendar shows the live date; Weather refreshes every 15 minutes; a Now Playing tile follows MPRIS players | `/tmp/opencode/start-final2.png` |
 
-The title bars come from `themes/windows-10/titlebars/`, a fork of
+GTK apps are styled by `themes/windows-10/gtk/`: a small override sheet for
+GTK3 and GTK4 (`gtk-3.0/gtk.css`, `gtk-4.0/gtk.css`) plus `settings.ini` with
+`gtk-decoration-layout=menu:minimize,maximize,close`, Selawik and the light
+theme. The hook installs them into `~/.config`, snapshots any previous files
+and gsettings values, and restores both on theme rollback. This gives standard
+GTK header bars a white Windows bar with min/max/close and the red close hover.
+libadwaita apps keep their own circular window controls and centred title,
+because libadwaita loads its stylesheet at a higher priority than user CSS.
+
+The server-side title bars come from `themes/windows-10/titlebars/`, a fork of
 `omarchy-hyprland-titlebars` built against the live Hyprland headers. It adds
 `hover_bg_color` / `hover_fg_color` per caption button. The theme hook builds it
 to `~/.local/share/windows-10-titlebars/titlebars.so`, loads it as `winbars`,
@@ -43,9 +52,10 @@ GTK apps request server-side decorations. Measured results:
   left title, square min/max/close and the red close hover.
   Evidence `/tmp/opencode/compare-titlebar-gtk.png`.
 - **Nautilus and Evince (GTK4/libadwaita):** always draw their own header bar;
-  `GTK_CSD=0` cannot remove it. A `winbars:no_bar` window rule
-  (`^org\.gnome\..*`) suppresses the plugin bar for these classes so they do
-  not show two title bars.
+  `GTK_CSD=0` cannot remove it. The GTK CSS styles standard header bars white
+  with min/max/close (Evince), while libadwaita's own controls remain circular
+  (Nautilus). A `winbars:no_bar` window rule (`^org\.gnome\..*`) suppresses
+  the plugin bar so they never show two title bars.
 - **Chromium, Pinta and LibreOffice:** the same no-bar rule prevents duplicates
   because they draw their own client-side chrome.
 - `GTK_CSD` reaches apps spawned by Hyprland immediately and launcher apps after
@@ -61,7 +71,8 @@ Live checks: `plugin:winbars:enabled` → true, `bar_height` → 30,
 - Start (like-for-like dark, grouped wide/large tiles): `/tmp/opencode/compare-start-large.png`
 - Settings: `/tmp/opencode/compare-settings-resolution.png`
 - Action center (like-for-like dark, real icons and clickable cards): `/tmp/opencode/compare-action-icons.png`
-- Titlebar on a GTK app + close hover: `/tmp/opencode/compare-titlebar-gtk.png`
+- GTK app styling: `/tmp/opencode/compare-gtk-style.png`
+- Titlebar on a GTK SSD app + close hover: `/tmp/opencode/compare-titlebar-gtk.png`
 - Titlebar default-white reference: `/tmp/opencode/compare-titlebar-default.png`
 
 The taskbar, Start and action-center comparisons use dark Windows mode references with black surfaces, matching Big Nut's defaults. The wallpaper in the full desktop capture is an original drawing, so the taskbar strip comparison is the like-for-like surface comparison. The titlebar comparison uses a Windows 10 About dialog with a default white titlebar; it has one close button because dialogs do not show minimize/maximize. The accent-colored Settings capture documents the reference's custom accent, not Big Nut's palette.
@@ -87,10 +98,13 @@ The taskbar, Start and action-center comparisons use dark Windows mode reference
   Power & battery, Notifications and Multitasking; Devices reads Bluetooth and
   CUPS state; Network & Internet reads NetworkManager state. Actions are real
   Omarchy/NetworkManager/CUPS commands, not Windows services.
-- GTK4/libadwaita apps (Nautilus, Evince, Pinta) always draw their own header
-  bars even with `GTK_CSD=0`; the theme suppresses its own bar for those classes
-  so there is one header, but it is the app's header rather than a Windows one.
-  GTK3 apps that honour xdg-decoration (gcr-viewer) get the Windows bar.
+- GTK4/libadwaita apps (Nautilus, Evince, Pinta) draw their own header bars.
+  The GTK CSS turns standard GTK header bars white with Windows min/max/close
+  and red close hover (Evince), but libadwaita's own window controls stay
+  circular and its title remains centred because its style provider outranks
+  user CSS. The plugin's own bar is suppressed for those classes so there is
+  never a duplicate title bar. GTK3 apps that honour xdg-decoration
+  (gcr-viewer) get the server-side Windows bar.
 - Jump-list Recent rows are live: the helper reads the real XDG recent store.
   The LO Writer row was verified with `~/Documents/Windows 10 notes.txt`.
 - Inactive caption buttons use `#d0d0d0` rather than Windows' exact
