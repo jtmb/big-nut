@@ -148,8 +148,10 @@ current bar/plugin lists, places the Windows widgets, disables the Golden Gate
 dock/menu/widget plugins, and rolls everything back on the next theme switch.
 `windowsTaskbar.pinned` in `shell.json` stores the taskbar pins. The theme's
 `hyprland.lua` sets square zero-gap windows, opaque surfaces and the
-`#0078d7` accent border, and loads Omarchy's titlebar plugin with a 30px white
-bar and square Windows caption buttons for every window.
+`#0078d7` accent border, and loads the theme's titlebar fork (`titlebars/`,
+built by the hook) with a 30px white bar, square Windows caption buttons and a
+red `#e81123` close hover. Omarchy's stock titlebar plugin is disabled so only
+one bar is drawn.
 
 References, live measurements and remaining deviations are recorded in
 [windows-10.md](windows-10.md). The wallpaper is an original blue four-pane

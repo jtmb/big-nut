@@ -14,6 +14,7 @@ THEME = "windows-10"
 CONFIG = Path.home() / ".config/omarchy/shell.json"
 STATE = Path.home() / ".local/state/omarchy/windows-10-ui.json"
 FONTS = Path.home() / ".local/share/fonts/selawik"
+TITLEBARS = Path.home() / ".local/share/windows-10-titlebars/titlebars.so"
 THEME_DIR = Path(__file__).resolve().parent
 KEYS = ("bar", "dock", "plugins", "disabledPlugins", "cloneSourceRestores")
 PINNED = ["org.gnome.Nautilus", "chromium", "foot", "libreoffice-writer"]
@@ -53,9 +54,28 @@ def install_fonts():
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
+def install_titlebars():
+    """Build the hover-capable Windows titlebar fork against live Hyprland."""
+    if os.environ.get("WINDOWS10_SKIP_TITLEBARS"):
+        return
+    build = THEME_DIR / "titlebars/build.sh"
+    if not build.is_file():
+        return
+    sources = list((THEME_DIR / "titlebars").glob("*.cpp")) + \
+        list((THEME_DIR / "titlebars").glob("*.hpp"))
+    newest = max((path.stat().st_mtime for path in sources), default=0)
+    if TITLEBARS.is_file() and TITLEBARS.stat().st_mtime >= newest:
+        return
+    if not shutil.which("g++"):
+        return
+    subprocess.run(["bash", str(build), str(TITLEBARS)], check=False,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
 def apply(config):
     before = snapshot(config)
     install_fonts()
+    install_titlebars()
 
     bar = copy.deepcopy(config.get("bar", {}))
     bar["background"] = "opaque"
@@ -118,6 +138,8 @@ def rollback(config):
     save(CONFIG, config)
     # Hyprland keeps a loaded plugin across theme switches; do not leave the
     # white Windows caption bars on the next theme.
+    subprocess.run(["hyprctl", "plugin", "unload", str(TITLEBARS)],
+                   check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     subprocess.run(["hyprctl", "eval",
                     "hl.config({ plugin = { hyprbars = { enabled = false } } })"],
                    check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -134,6 +156,7 @@ def main():
     if slug == THEME:
         if STATE.is_file():
             install_fonts()
+            install_titlebars()
             state = json.loads(STATE.read_text())
             if state.get("slug") == THEME:
                 return

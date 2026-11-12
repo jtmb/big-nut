@@ -52,6 +52,7 @@ class ThemeToolsTest(unittest.TestCase):
         hyprctl.write_text("#!/bin/sh\nexit 0\n")
         hyprctl.chmod(0o755)
         self.env = dict(os.environ, HOME=str(self.home), XDG_STATE_HOME=str(self.home / ".local/state"), OMARCHY_PATH="/usr/share/omarchy",
+                        WINDOWS10_SKIP_TITLEBARS="1",
                         PATH=str(stub.parent) + os.pathsep + os.environ["PATH"])
 
     def read_config(self):
@@ -268,6 +269,15 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn('bar_color = "#ffffff"', lua)
         self.assertIn("button_rounding = 0", lua)
         self.assertIn("add_button", lua)
+        self.assertIn('hover_bg_color = "#e81123"', lua)
+        self.assertIn('hover_fg_color = "#ffffff"', lua)
+        self.assertIn("winbars", lua)
+        self.assertIn("hyprbars = { enabled = false }", lua)
+        source = (WINDOWS / "titlebars/main.cpp").read_text()
+        self.assertIn('"hover_bg_color"', source)
+        self.assertIn('"hover_fg_color"', source)
+        self.assertIn("hoverbgcol", (WINDOWS / "titlebars/barDeco.cpp").read_text())
+        self.assertTrue((WINDOWS / "titlebars/build.sh").is_file())
         taskbar = (ROOT / "shared/brajam.windows-taskbar/BarWidget.qml").read_text()
         self.assertIn("WindowsSettings", taskbar)
         self.assertIn('settingsView.open("home")', taskbar)
@@ -311,6 +321,9 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn("Quick actions", clock)
         self.assertIn("nmcli radio wifi toggle", clock)
         self.assertIn("omarchy-shell notifications toggleDnd", clock)
+        self.assertIn("columns: 4", clock)
+        self.assertIn('text: "Collapse"', clock)
+        self.assertIn('"Screen snip"', clock)
         self.assertIn("liveView", clock)
         self.assertIn("mergeNotifications", clock)
         start = (ROOT / "shared/brajam.windows-taskbar/StartMenu.qml").read_text()

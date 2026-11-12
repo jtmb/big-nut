@@ -24,6 +24,11 @@ metric-compatible Segoe UI substitute.
 - Font: `fonts/` contains Selawik Regular, Semilight, Light, Semibold and Bold
   (SIL Open Font License 1.1, see `fonts/LICENSE.txt`). The theme hook installs
   them for the current user and refreshes fontconfig.
+- Title bars: `titlebars/` is a BSD-licensed fork of Omarchy's
+  `omarchy-hyprland-titlebars` that adds per-button hover colours. The hook
+  builds it against the installed Hyprland headers into
+  `~/.local/share/windows-10-titlebars/titlebars.so`, loads it as `winbars`,
+  and disables the stock `hyprbars` plugin against double decorations.
 
 ## Install and apply
 
@@ -56,10 +61,10 @@ pins; edit it or use the START menu's pinned app list as a starting point.
 
 The taskbar height (40px), black taskbar, 24px app icons in 40px slots,
 two-line clock, Start rail/tile proportions, square surfaces, 30px white window
-caption bars with square min/max/close buttons, light Settings palette and
-`#0078d7` accent follow Windows 10 at 100% scale. The title bars come from
-Omarchy's titlebar plugin with a Windows-styled configuration; applications
-still draw their own client-area chrome and menus. Start's Settings button opens
+caption bars with left-aligned titles, square min/max/close buttons, the
+`#e81123` red close hover, light Settings palette and `#0078d7` accent follow
+Windows 10 at 100% scale. Applications still draw their own client-area chrome
+and menus. Start's Settings button opens
 the Windows Settings window (Personalization, Taskbar, Display, Background and
 Multitasking), and the action center has a working quick-actions flyout. The
 reference screenshots used while building this were the
@@ -72,9 +77,8 @@ notifications and links to the full history; the Calendar, Weather and MPRIS Now
 tiles are live while other application-owned tiles remain static; taskbar jump lists
 provide open, pin/unpin, close-all and recent XDG documents; Settings has
 Home, Accounts, Time & language, Privacy & security, Update & security,
-Personalization, Taskbar, Display, Background and Multitasking pages; caption
-buttons do not turn red on hover. These are Linux limitations of the current
-Omarchy surfaces, not hidden fake controls.
+Personalization, Taskbar, Display, Background and Multitasking pages. These
+are Linux limitations of the current Omarchy surfaces, not hidden fake controls.
 
 See [docs/windows-10.md](../../docs/windows-10.md) for the reference measurements and deviations.
 

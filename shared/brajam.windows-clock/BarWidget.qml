@@ -215,7 +215,7 @@ BarWidget {
     }
     visible: root.actionOpen
     color: "transparent"
-    implicitWidth: 360
+    implicitWidth: 400
     implicitHeight: 430
     mask: Region { item: root.actionOpen ? panel : null }
 
@@ -235,6 +235,20 @@ BarWidget {
         x: 16; y: 14
         text: "Notifications"
         color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12; font.weight: Font.DemiBold
+      }
+      Text {
+        anchors.right: parent.right; anchors.rightMargin: 16; y: 14
+        text: "Collapse"
+        color: collapseMouse.containsMouse ? "#ffffff" : "#b8b8b8"
+        font.family: "Selawik"; font.pixelSize: 11
+        MouseArea {
+          id: collapseMouse
+          anchors.fill: parent
+          anchors.margins: -4
+          hoverEnabled: true
+          cursorShape: Qt.PointingHandCursor
+          onClicked: root.closeActionCenter()
+        }
       }
 
       Flickable {
@@ -318,32 +332,34 @@ BarWidget {
       }
 
       Grid {
-        x: 16; y: 274
-        columns: 2
-        spacing: 8
+        x: 8; y: 282
+        columns: 4
+        spacing: 4
         Repeater {
           model: [
+            { title: "All settings", icon: "\uf013", state: false, command: "omarchy-shell brajam.windows-taskbar settings home" },
+            { title: "Network", icon: "\uf1eb", state: root.wifiOn, command: "omarchy-shell shell summon omarchy.network" },
+            { title: "Night light", icon: "\uf186", state: root.nightlightOn, command: "omarchy toggle nightlight" },
+            { title: "Focus assist", icon: "\uf1f6", state: root.dndOn, command: "omarchy-shell notifications toggleDnd" },
             { title: "Wi-Fi", icon: "\uf1eb", state: root.wifiOn, command: "nmcli radio wifi toggle" },
             { title: "Bluetooth", icon: "\uf293", state: root.bluetoothOn, command: "bluetoothctl power toggle" },
-            { title: "Night light", icon: "\uf186", state: root.nightlightOn, command: "omarchy toggle nightlight" },
-            { title: "Focus assist", icon: "\uf1f6", state: root.dndOn, command: "omarchy-shell notifications toggleDnd" }
+            { title: "Screen snip", icon: "\uf030", state: false, command: "omarchy capture screenshot region" }
           ]
           delegate: Rectangle {
             required property var modelData
-            width: 160; height: 58
+            width: 92; height: 62
             color: modelData.state ? "#0078d7" : "#2b2b2b"
             border.width: 1; border.color: modelData.state ? "#0078d7" : "#3f3f3f"
             Text {
-              anchors.horizontalCenter: parent.horizontalCenter
-              y: 8
+              x: 8; y: 8
               text: modelData.icon
-              font.family: "Font Awesome 7 Free Solid"; font.pixelSize: 16; color: "#ffffff"
+              font.family: "Font Awesome 7 Free Solid"; font.pixelSize: 15; color: "#ffffff"
             }
             Text {
-              anchors.horizontalCenter: parent.horizontalCenter
-              y: 34
+              x: 8; y: 36; width: parent.width - 12
               text: modelData.title
-              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12
+              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 11
+              elide: Text.ElideRight
             }
             MouseArea {
               anchors.fill: parent

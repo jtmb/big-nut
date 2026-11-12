@@ -23,38 +23,49 @@ default `#0078d7` accent.
 | Start size | about 640×600 at 1080p | 640×600 | `/tmp/opencode/start-recent-half.png` |
 | Start palette | dark `#1f1f1f` by default | `#1f1f1f` with `#191919` rail | `start-recent-half.png` |
 | Start content | Recently added, All apps, tiles, rail, power | Recently added, All apps, tiles, rail, power | `start-recent-half.png` |
-| Titlebar | 30px Windows 10 bar, square caption buttons | 30px white bar, square transparent buttons, Selawik | `/tmp/opencode/final4-half.png` |
+| Titlebar | 30px white bar, square caption buttons, red `#e81123` close hover | 30px white bar, left-aligned Selawik title, square buttons, red close hover | `/tmp/opencode/compare-titlebar-hover.png` |
 | Settings | light page, `#f2f2f2` nav, `#0078d7` accent | same palette; Home/Accounts/Time/Privacy/Update plus the existing pages | `/tmp/opencode/settings-home3.png`, `live-displays.png` |
-| Action center | dark flyout, notifications above quick actions | same structure; up to six live/history notifications in a scrollable list, quick actions work | `/tmp/opencode/action-notifs2.png` |
+| Action center | dark flyout, notifications above a 4-column quick-action grid | same structure; up to six live/history notifications, 4-column grid, active tiles blue | `/tmp/opencode/compare-action-dark3.png` |
 | Jump list | taskbar app context menu with recent files | right-click/`jump <id>` menu with Open, Pin/Unpin, Close all and recent documents from the XDG recent store | `/tmp/opencode/jump-final-half.png` |
 | Live tiles | Calendar, Weather and media update | Calendar shows the live date; Weather refreshes every 15 minutes; a Now Playing tile follows MPRIS players | `/tmp/opencode/start-final2.png` |
 
-Live checks: `hyprctl getoption plugin:hyprbars:enabled` → true,
-`bar_height` → 30; the monitor is eDP-1 at 2160×1440, scale 2 (200%), 60 Hz.
-Tests: `python3 -m unittest discover -s tests -v` → 20/20.
+The title bars come from `themes/windows-10/titlebars/`, a fork of
+`omarchy-hyprland-titlebars` built against the live Hyprland headers. It adds
+`hover_bg_color` / `hover_fg_color` per caption button. The theme hook builds it
+to `~/.local/share/windows-10-titlebars/titlebars.so`, loads it as `winbars`,
+and disables Omarchy's stock `hyprbars` so only one decoration owns the edge.
+
+Live checks: `plugin:winbars:enabled` → true, `bar_height` → 30,
+`plugin:hyprbars:enabled` → false; the monitor is eDP-1 at 2160×1440, scale 2
+(200%), 60 Hz. Tests: `python3 -m unittest discover -s tests -v` → 22/22.
 
 ## Side-by-side comparisons
 
 - Desktop: `/tmp/opencode/compare-desktop4.png`
 - Start (like-for-like dark): `/tmp/opencode/compare-start6.png`
 - Settings: `/tmp/opencode/compare-settings4.png`
-- Action center: `/tmp/opencode/compare-action4.png`
-- Titlebar: `/tmp/opencode/compare-titlebar6.png`
+- Action center (like-for-like dark): `/tmp/opencode/compare-action-dark3.png`
+- Titlebar (default white, like-for-like): `/tmp/opencode/compare-titlebar-default.png`
+- Titlebar close hover: `/tmp/opencode/compare-titlebar-hover.png`
 
-The Start comparison now uses a reference in the same dark Windows mode with a black taskbar, matching Big Nut's default surfaces. The earlier accent-colored reference is retained only for the Settings/titlebar captures where it documents the source configuration.
+The Start and action-center comparisons use dark Windows mode references with black surfaces, matching Big Nut's defaults. The titlebar comparison uses a Windows 10 About dialog with a default white titlebar; it has one close button because dialogs do not show minimize/maximize. The accent-colored Settings capture documents the reference's custom accent, not Big Nut's palette.
 
 ## Intentional deviations
 
-- The action center shows the three most recent entries from Omarchy's
-  persisted notification history; clicking one opens the full history.
-- The Weather Start tile is live; the remaining tiles are static because their
-  live-tile feeds are application-owned. Jump lists provide Open, Pin/Unpin
-  and Close all, but not application recent-file lists.
+- The action center shows up to six recent live/history entries; clicking one
+  opens Omarchy's full notification history rather than a Windows notification
+  database view.
+- Calendar, Weather and MPRIS Now Playing tiles are live. Other tiles are
+  static because their feeds are application-owned. Jump lists include recent
+  XDG documents; the live store on this machine is empty, so the helper is
+  covered by a synthetic-XBEL test.
 - Settings provides Home, Accounts, Time & language, Privacy & security,
   Update & security, Personalization, Taskbar, Display, Background and
-  Multitasking pages. The actions behind Accounts/Time/Privacy/Update are real
-  Omarchy commands or panels, not Windows services.
-- Caption buttons do not have the Windows 10 red close-hover fill, and inactive
-  caption buttons can show their white backplates against a gray inactive bar.
+  Multitasking pages. The actions behind the new categories are real Omarchy
+  commands or panels, not Windows services.
+- Inactive caption buttons use `#d0d0d0` rather than Windows' exact
+  `#cccccc`; the difference is a few RGB points and only shows on unfocused
+  windows.
 - The wallpaper and four-pane artwork are original drawings, not Microsoft
-  assets.
+  assets. No Microsoft font, icon, logo or wallpaper file is included;
+  Selawik is Microsoft's SIL OFL Segoe UI substitute.

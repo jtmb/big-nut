@@ -21,20 +21,35 @@ hl.config({
 
 o.transparent_window(".*", "1.0 override 1.0 override")
 
--- Windows 10 caption bars. Omarchy only loads its titlebar plugin for floating
--- workspaces; the Windows theme wants the normal white 30px bar on every
--- window. The transparent (white) square buttons keep the Windows caption
--- layout while avoiding the rounded circles of the default plugin style.
-local titlebars = "/usr/lib/omarchy-hyprland-titlebars/titlebars.so"
-local titlebars_file = io.open(titlebars, "r")
-if titlebars_file then
-  titlebars_file:close()
-  hl.plugin.load(titlebars)
+-- Windows 10 caption bars. Omarchy's stock titlebar plugin draws floating
+-- workspace bars; it is loaded and disabled here so the Windows fork can own
+-- every window without two decorations fighting over the same edge.
+local stock = "/usr/lib/omarchy-hyprland-titlebars/titlebars.so"
+local stock_file = io.open(stock, "r")
+if stock_file then
+  stock_file:close()
+  hl.plugin.load(stock)
   if hl.plugin.hyprbars then
+    hl.config({ plugin = { hyprbars = { enabled = false } } })
+  end
+end
+
+-- The fork adds optional hover_bg_color / hover_fg_color per caption button,
+-- which is what gives the close button Windows 10's red hover.
+local data_home = os.getenv("XDG_DATA_HOME")
+if not data_home or data_home == "" then
+  data_home = (os.getenv("HOME") or "") .. "/.local/share"
+end
+local custom = data_home .. "/windows-10-titlebars/titlebars.so"
+local custom_file = io.open(custom, "r")
+if custom_file then
+  custom_file:close()
+  hl.plugin.load(custom)
+  if hl.plugin.winbars then
     local window = [[window = "address:%WINDOW%"]]
     hl.config({
       plugin = {
-        hyprbars = {
+        winbars = {
           enabled = true,
           bar_height = 30,
           bar_color = "#ffffff",
@@ -51,21 +66,27 @@ if titlebars_file then
           button_rounding = 0,
           icon_on_hover = false,
           inactive_button_color = "#d0d0d0",
-          on_double_click = "hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = \"maximized\", action = \"toggle\", " .. window .. " })'",
         },
       },
     })
     for _, button in ipairs({
-      { icon = "×", action = "hyprctl dispatch 'hl.dsp.window.close({ " .. window .. " })'" },
+      {
+        icon = "×",
+        action = "hyprctl dispatch 'hl.dsp.window.close({ " .. window .. " })'",
+        hover_bg_color = "#e81123",
+        hover_fg_color = "#ffffff",
+      },
       { icon = "□", action = "hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = \"maximized\", action = \"toggle\", " .. window .. " })'" },
       { icon = "—", action = "omarchy-hyprland-window-minimize %WINDOW%" },
     }) do
-      hl.plugin.hyprbars.add_button({
+      hl.plugin.winbars.add_button({
         bg_color = "#ffffff",
         fg_color = "#000000",
         size = 22,
         icon = button.icon,
         action = button.action,
+        hover_bg_color = button.hover_bg_color,
+        hover_fg_color = button.hover_fg_color,
       })
     end
   end
