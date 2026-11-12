@@ -37,7 +37,8 @@ metric-compatible Segoe UI substitute.
   (min/max/close, Selawik), with the red close hover, including libadwaita's
   window controls. The hook installs and restores them, plus the matching
   gsettings values. Those apps are still excluded from the server-side bar so
-  they never show two title bars.
+  they never show two title bars. GTK title text remains app-positioned
+  (normally centred): `GtkCenterBox` has no CSS-reachable left slot.
 
 ## Install and apply
 
