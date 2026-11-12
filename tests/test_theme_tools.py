@@ -272,6 +272,15 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn("WindowsSettings", taskbar)
         self.assertIn('settingsView.open("appearance")', taskbar)
 
+    def test_windows_action_center_and_recent_apps(self):
+        clock = (ROOT / "shared/brajam.windows-clock/BarWidget.qml").read_text()
+        self.assertIn("Quick actions", clock)
+        self.assertIn("nmcli radio wifi toggle", clock)
+        self.assertIn("omarchy-shell notifications toggleDnd", clock)
+        start = (ROOT / "shared/brajam.windows-taskbar/StartMenu.qml").read_text()
+        self.assertIn("Recently added", start)
+        self.assertIn("All apps", start)
+
     def test_windows_theme_applies_taskbar_and_rolls_back(self):
         self.run_tool("ui-hook.py", "windows-10", theme=WINDOWS)
         config = self.read_config()

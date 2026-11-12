@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 import qs.Commons
 import qs.Ui
 
@@ -10,6 +11,12 @@ BarWidget {
   moduleName: "brajam.windows-clock"
 
   property date now: new Date()
+  property bool actionOpen: false
+  property bool wifiOn: false
+  property bool bluetoothOn: false
+  property bool nightlightOn: false
+  property bool dndOn: false
+  property int notificationCount: 0
 
   readonly property string timeText: Qt.formatDateTime(now, "h:mm AP")
   readonly property string dateText: Qt.formatDateTime(now, "M/d/yyyy")
@@ -21,6 +28,63 @@ BarWidget {
     triggeredOnStart: true
     onTriggered: root.now = new Date()
   }
+  Process {
+    id: wifiReader
+    command: ["nmcli", "radio", "wifi"]
+    stdout: StdioCollector { onStreamFinished: root.wifiOn = text.trim() === "enabled" }
+  }
+  Process {
+    id: bluetoothReader
+    command: ["bash", "-c", "bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo on || echo off"]
+    stdout: StdioCollector { onStreamFinished: root.bluetoothOn = text.trim() === "on" }
+  }
+  Process {
+    id: nightReader
+    command: ["omarchy", "toggle", "nightlight", "--status"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        try { root.nightlightOn = JSON.parse(text).enabled === true } catch (e) { root.nightlightOn = false }
+      }
+    }
+  }
+  Process {
+    id: dndReader
+    command: ["omarchy-shell", "notifications", "isDnd"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        var value = text.trim()
+        root.dndOn = value === "true" || value === "on" || value === "1"
+      }
+    }
+  }
+  Process {
+    id: countReader
+    command: ["omarchy-shell", "notifications", "count"]
+    stdout: StdioCollector { onStreamFinished: root.notificationCount = parseInt(text.trim()) || 0 }
+  }
+  Timer { id: actionRefresh; interval: 900; onTriggered: root.refresh() }
+
+  function refresh() {
+    if (!wifiReader.running) wifiReader.running = true
+    if (!bluetoothReader.running) bluetoothReader.running = true
+    if (!nightReader.running) nightReader.running = true
+    if (!dndReader.running) dndReader.running = true
+    if (!countReader.running) countReader.running = true
+  }
+  function openActionCenter() {
+    root.actionOpen = true
+    root.refresh()
+  }
+  function closeActionCenter() { root.actionOpen = false }
+  function toggleActionCenter() {
+    if (root.actionOpen) root.closeActionCenter()
+    else root.openActionCenter()
+  }
+  function quickAction(command) {
+    root.bar.run(command)
+    actionRefresh.restart()
+  }
+
   implicitWidth: 70 + 40 + 6
   implicitHeight: root.barSize
 
@@ -50,9 +114,8 @@ BarWidget {
       width: 40; height: root.barSize
       Rectangle {
         anchors.fill: parent
-        color: actionMouse.containsMouse ? "#26ffffff" : "transparent"
+        color: actionMouse.containsMouse || root.actionOpen ? "#26ffffff" : "transparent"
       }
-      // speech bubble outline
       Rectangle {
         anchors.centerIn: parent
         width: 18; height: 14
@@ -65,7 +128,7 @@ BarWidget {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: root.bar.run("omarchy-shell notifications showHistory")
+        onClicked: root.toggleActionCenter()
       }
     }
 
@@ -83,5 +146,120 @@ BarWidget {
     }
   }
 
+  PopupWindow {
+    id: actionCenter
+    anchor {
+      id: popupAnchor
+      window: actionButton.QsWindow.window
+      adjustment: PopupAdjustment.Slide
+      edges: Edges.Top | Edges.Left
+      gravity: Edges.Bottom | Edges.Right
+      rect.width: 1
+      rect.height: 1
+      onAnchoring: {
+        if (!actionButton.QsWindow.window || !root.bar) return
+        var win = actionButton.QsWindow.window
+        var point = win.contentItem.mapFromItem(actionButton, actionButton.width - actionCenter.implicitWidth, -actionCenter.implicitHeight)
+        popupAnchor.rect.x = Math.round(Math.max(8, Math.min(point.x, win.width - actionCenter.implicitWidth - 8)))
+        popupAnchor.rect.y = Math.round(Math.max(8, point.y))
+      }
+    }
+    visible: root.actionOpen
+    color: "transparent"
+    implicitWidth: 360
+    implicitHeight: 380
+    mask: Region { item: root.actionOpen ? panel : null }
 
+    HyprlandFocusGrab {
+      active: root.actionOpen
+      windows: actionButton.QsWindow.window ? [actionCenter, actionButton.QsWindow.window] : [actionCenter]
+      onCleared: root.closeActionCenter()
+    }
+
+    Rectangle {
+      id: panel
+      anchors.fill: parent
+      color: "#1f1f1f"
+      border.width: 1; border.color: "#4d4d4d"
+
+      Text {
+        x: 16; y: 14
+        text: "Notifications"
+        color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12; font.weight: Font.DemiBold
+      }
+      Text {
+        x: 16; y: 38
+        width: parent.width - 32
+        text: root.notificationCount > 0 ? root.notificationCount + " new notification" + (root.notificationCount === 1 ? "" : "s") : "No new notifications"
+        color: "#b8b8b8"; font.family: "Selawik"; font.pixelSize: 12
+      }
+      Rectangle {
+        x: 16; y: 66; width: parent.width - 32; height: 34
+        color: historyMouse.containsMouse ? "#3a3a3a" : "#2b2b2b"
+        border.width: 1; border.color: "#3f3f3f"
+        Text {
+          x: 10; anchors.verticalCenter: parent.verticalCenter
+          text: "Open notification history"
+          color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12
+        }
+        MouseArea {
+          id: historyMouse
+          anchors.fill: parent
+          hoverEnabled: true
+          cursorShape: Qt.PointingHandCursor
+          onClicked: { root.closeActionCenter(); root.bar.run("omarchy-shell notifications showHistory") }
+        }
+      }
+
+      Text {
+        x: 16; y: 130
+        text: "Quick actions"
+        color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12; font.weight: Font.DemiBold
+      }
+
+      Grid {
+        x: 16; y: 160
+        columns: 2
+        spacing: 8
+        Repeater {
+          model: [
+            { title: "Wi-Fi", icon: "\uf1eb", state: root.wifiOn, command: "nmcli radio wifi toggle" },
+            { title: "Bluetooth", icon: "\uf293", state: root.bluetoothOn, command: "bluetoothctl power toggle" },
+            { title: "Night light", icon: "\uf186", state: root.nightlightOn, command: "omarchy toggle nightlight" },
+            { title: "Focus assist", icon: "\uf1f6", state: root.dndOn, command: "omarchy-shell notifications toggleDnd" }
+          ]
+          delegate: Rectangle {
+            required property var modelData
+            width: 160; height: 58
+            color: modelData.state ? "#0078d7" : "#2b2b2b"
+            border.width: 1; border.color: modelData.state ? "#0078d7" : "#3f3f3f"
+            Text {
+              anchors.horizontalCenter: parent.horizontalCenter
+              y: 8
+              text: modelData.icon
+              font.family: "Font Awesome 7 Free Solid"; font.pixelSize: 16; color: "#ffffff"
+            }
+            Text {
+              anchors.horizontalCenter: parent.horizontalCenter
+              y: 34
+              text: modelData.title
+              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12
+            }
+            MouseArea {
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: root.quickAction(modelData.command)
+            }
+          }
+        }
+      }
+
+    }
+  }
+
+  ShellIpc {
+    target: "brajam.windows-clock"
+    function action(): void { root.toggleActionCenter() }
+    function close(): void { root.closeActionCenter() }
+  }
 }

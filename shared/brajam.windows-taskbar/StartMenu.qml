@@ -19,6 +19,12 @@ PopupWindow {
   signal settingsRequested()
 
   readonly property var appRows: { var q = root.query; return root.buildAppRows() }
+  readonly property var recentApps: {
+    var result = []
+    for (var i = 0; i < root.appRows.length && result.length < 3; i++)
+      if (root.appRows[i].type === "app") result.push(root.appRows[i])
+    return result
+  }
   readonly property var tileApps: root.buildTiles()
   readonly property string initial: (Quickshell.env("USER") || "U").charAt(0).toUpperCase()
 
@@ -237,7 +243,7 @@ PopupWindow {
       height: parent.height
       Text {
         x: 16; y: 16
-        text: root.searchMode && root.query.length > 0 ? "Search results" : "All apps"
+        text: root.searchMode && root.query.length > 0 ? "Search results" : "Recently added"
         color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12; font.weight: Font.DemiBold
       }
       Flickable {
@@ -248,6 +254,42 @@ PopupWindow {
         Column {
           id: appColumn
           width: parent.width
+          Repeater {
+            model: root.searchMode && root.query.length > 0 ? [] : root.recentApps
+            delegate: Item {
+              required property var modelData
+              width: appColumn.width; height: 32
+              Rectangle { anchors.fill: parent; color: recentMouse.containsMouse ? "#3a3a3a" : "transparent" }
+              Image {
+                x: 8; anchors.verticalCenter: parent.verticalCenter
+                width: 16; height: 16
+                source: Quickshell.iconPath(modelData.entry.icon, true)
+                fillMode: Image.PreserveAspectFit
+              }
+              Text {
+                x: 32; anchors.verticalCenter: parent.verticalCenter
+                width: parent.width - 38
+                text: modelData.name
+                color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12
+                elide: Text.ElideRight
+              }
+              MouseArea {
+                id: recentMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.launchRequested(modelData.entry)
+              }
+            }
+          }
+          Text {
+            visible: !(root.searchMode && root.query.length > 0)
+            width: parent.width; height: 28
+            text: "All apps"
+            color: "#0078d7"; font.family: "Selawik"; font.pixelSize: 12; font.weight: Font.DemiBold
+            leftPadding: 8
+            verticalAlignment: Text.AlignVCenter
+          }
           Repeater {
             model: root.appRows
             delegate: Item {

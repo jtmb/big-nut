@@ -47,7 +47,7 @@ pins; edit it or use the START menu's pinned app list as a starting point.
 - Task View: show open windows as clickable cards.
 - App button: launch, focus, or minimize the app's windows; a blue underline
   marks the active app.
-- Action center: opens Omarchy's notification history panel (the shell's notification service).
+- Action center: dark flyout above the taskbar with Wi-Fi, Bluetooth, Night light and Focus assist quick actions plus a notification count and history link.
 - Show desktop: minimize everything on the workspace, or restore what the
   taskbar hid.
 - Power button: Sleep, Shut down, Restart, Sign out.
@@ -61,10 +61,18 @@ caption bars with square min/max/close buttons, light Settings palette and
 Omarchy's titlebar plugin with a Windows-styled configuration; applications
 still draw their own client-area chrome and menus. Start's Settings button opens
 the Windows Settings window (Personalization, Taskbar, Display, Background and
-Multitasking), and the action center opens Omarchy's notification history rather
-than a full Windows quick-actions pane. The reference screenshots used while building this were the
+Multitasking), and the action center has a working quick-actions flyout. The
+reference screenshots used while building this were the
 Wikimedia Commons Windows 10 taskbar and Start menu captures, the Windows 10
 Settings scale and layout capture, and Microsoft's Windows app title bar design
 guidance.
+
+Remaining deviations: the action center shows a notification count and a link
+to Omarchy's notification history rather than embedding every notification;
+Start tiles are static rather than live, and taskbar jump lists are not
+implemented; the Settings surface covers the five working pages above rather
+than all Windows 10 category pages; caption buttons do not turn red on hover.
+These are Linux limitations of the current Omarchy surfaces, not hidden fake
+controls.
 
 Not affiliated with or endorsed by Microsoft.

@@ -136,7 +136,7 @@ short footnote.
 Golden Gate variant. It uses a 40px black taskbar at the bottom:
 `brajam.windows-taskbar` (Start, search, Task View, pinned/running apps) on the
 left, `brajam.windows-tray` + Omarchy network/audio/battery +
-`brajam.windows-clock` (two-line clock, notification action center, Show desktop) on the
+`brajam.windows-clock` (two-line clock, quick-actions action center, Show desktop) on the
 right. The Start menu is the taskbar's own dark rail, all-apps list, live tiles
 and power flyout. The same taskbar plugin hosts the Windows Settings window,
 opened from Start's Settings button; it has Personalization, Taskbar, Display,
