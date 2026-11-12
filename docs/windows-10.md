@@ -81,7 +81,8 @@ Live checks: `plugin:winbars:enabled` → true, `bar_height` → 30,
 - Desktop/Hero wallpaper: `/tmp/opencode/compare-desktop-hero.png`
 - Lock screen: `/tmp/opencode/compare-lock2.png`
 - Notification toast: `/tmp/opencode/compare-toast2.png`
-- Dark OSD: `/tmp/opencode/compare-osd.png`
+- Dark OSD: `/tmp/opencode/compare-osd3.png`
+- Toast stack order: `/tmp/opencode/compare-toast-stack.png`
 
 The taskbar, Start and action-center comparisons use dark Windows mode references with black surfaces, matching Big Nut's defaults. The wallpaper in the full desktop capture is an original drawing, so the taskbar strip comparison is the like-for-like surface comparison. The titlebar comparison uses a Windows 10 About dialog with a default white titlebar; it has one close button because dialogs do not show minimize/maximize. The accent-colored Settings capture documents the reference's custom accent, not Big Nut's palette.
 
@@ -126,12 +127,14 @@ bars are unaffected.
   to the bottom-right above the taskbar. The action center store still receives
   the same notification data. `shell.notifications.toml` keeps the dark colours.
 - `shared/brajam.windows-osd` replaces the first-party OSD panel: dark
-  `#1f1f1f` card, white text, blue progress bar and a top-left position, like
-  Windows 10 volume/brightness overlays. The bar is horizontal rather than
-  Windows' vertical volume slider.
+  `#1f1f1f` card, white text, blue progress bar and a top-left position. Volume
+  and brightness use the Windows 10 vertical slider layout with the value below;
+  message-only overlays keep a compact horizontal card.
+- Toast cards stack newest at the bottom, matching Windows, by mirroring each
+  card inside the deck height.
 
-Evidence `/tmp/opencode/compare-lock2.png`, `/tmp/opencode/compare-toast2.png`
-and `/tmp/opencode/compare-osd.png`.
+Evidence `/tmp/opencode/compare-lock2.png`, `/tmp/opencode/compare-toast-stack.png`
+and `/tmp/opencode/compare-osd3.png`.
 
 ## Remaining layout audit
 
@@ -142,7 +145,7 @@ and `/tmp/opencode/compare-osd.png`.
 | Action center | Cards are a flat list with no app grouping, per-app notification settings, expand/collapse animation or quick-action edit mode | Group by app and add a notification-settings link |
 | Taskbar | No Cortana, thumbnail previews, taskbar overflow menu or per-app jump-list frequent list; search placeholder is the 1903 wording | Add hover thumbnails and a proper overflow menu |
 | Lock screen | Custom Windows lock service now has clock/date, avatar, password field and power controls; the bottom-left account switcher, network/battery status and accessibility button are still missing | Add an account list and status icons |
-| Toasts/OSD | Custom Windows notification and OSD plugins now provide bottom-right dark toasts with an app-name header and a dark top-left OSD; the OSD is horizontal rather than Windows 10's vertical volume slider | Add a vertical volume variant and finer toast stacking |
+| Toasts/OSD | Custom Windows notification and OSD plugins provide bottom-right dark toasts with an app-name header, newest-at-bottom stacking and a vertical dark top-left OSD | Refine icon glyphs and message-card sizing |
 
 ## Intentional deviations
 

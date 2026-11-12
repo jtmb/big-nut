@@ -207,7 +207,9 @@ Item {
   property real drawnHeight: targetHeight
 
 
-  y: scene ? scene.at(row.key, "y") : 0
+  // Windows stacks newest at the bottom; the layout is newest-first from the
+  // top, so mirror each card inside the deck height.
+  y: scene ? scene.deckHeight - scene.at(row.key, "y") - scene.at(row.key, "height") : 0
   z: place.z
   scale: scene ? scene.at(row.key, "scale") : 1
   opacity: place.hidden ? 0 : (scene ? scene.at(row.key, "opacity") : 1)
