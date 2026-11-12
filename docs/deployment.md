@@ -14,6 +14,8 @@ The following Omarchy paths are symbolic links into this repository:
 | `~/.config/omarchy/plugins/brajam.windows-clock` | `shared/brajam.windows-clock` |
 | `~/.config/omarchy/plugins/brajam.windows-tray` | `shared/brajam.windows-tray` |
 | `~/.config/omarchy/plugins/brajam.windows-lock` | `shared/brajam.windows-lock` |
+| `~/.config/omarchy/plugins/brajam.windows-osd` | `shared/brajam.windows-osd` |
+| `~/.config/omarchy/plugins/brajam.windows-notifications` | `shared/brajam.windows-notifications` |
 | `~/.config/omarchy/hooks/theme-set.d/golden-gate-ui-hook.sh` | `libs/golden-gate-ui-hook.sh` |
 | `~/.config/omarchy/hooks/theme-set.d/windows-10-ui-hook.sh` | `libs/windows-10-ui-hook.sh` |
 

@@ -452,8 +452,13 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn({"id": "brajam.windows-clock"}, config["plugins"])
         self.assertIn({"id": "brajam.windows-tray"}, config["plugins"])
         self.assertIn({"id": "brajam.windows-lock"}, config["plugins"])
+        self.assertIn({"id": "brajam.windows-osd"}, config["plugins"])
+        self.assertIn({"id": "brajam.windows-notifications"}, config["plugins"])
         self.assertIn("omarchy.lock", config["disabledPlugins"])
-        self.assertTrue((self.home / ".config/omarchy/plugins/brajam.windows-lock").is_symlink())
+        self.assertIn("omarchy.osd", config["disabledPlugins"])
+        self.assertIn("omarchy.notifications", config["disabledPlugins"])
+        for name in ("brajam.windows-lock", "brajam.windows-osd", "brajam.windows-notifications"):
+            self.assertTrue((self.home / ".config/omarchy/plugins" / name).is_symlink())
         self.assertIn("brajam.dock", config["disabledPlugins"])
         self.assertEqual(config["windowsTaskbar"]["pinned"],
                          ["org.gnome.Nautilus", "chromium", "foot", "libreoffice-writer"])

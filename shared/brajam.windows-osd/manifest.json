@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "brajam.windows-osd",
+  "name": "Windows OSD",
+  "version": "1.0.0",
+  "description": "Windows 10-style dark volume/brightness OSD",
+  "kinds": [
+    "panel"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "panel": "Osd.qml"
+  },
+  "author": "Local"
+}

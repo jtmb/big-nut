@@ -36,8 +36,9 @@ metric-compatible Segoe UI substitute.
 - Lock/toasts: `shared/brajam.windows-lock` is a Windows lock service with
   clock/date, avatar, password field and power controls; `shell.lock.toml`
   supplies its Windows colours. `shell.notifications.toml` keeps dark square
-  toast cards. The OSD still uses Omarchy's first-party overlay and its global
-  background token, so it remains light.
+  toast cards. `shared/brajam.windows-notifications` moves toasts to the
+  bottom-right with an app-name header; `shared/brajam.windows-osd` is a dark
+  top-left OSD. Both replace first-party plugins and need a shell restart.
 - GTK: `GTK_CSD=0` is set through Hyprland and
   `~/.config/environment.d/90-windows-10.conf`. `gtk/` contains GTK3/GTK4 CSS
   and a settings file that make header bars white, square and Windows-ordered

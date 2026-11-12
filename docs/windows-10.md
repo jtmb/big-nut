@@ -80,7 +80,8 @@ Live checks: `plugin:winbars:enabled` → true, `bar_height` → 30,
 - Titlebar default-white reference: `/tmp/opencode/compare-titlebar-default.png`
 - Desktop/Hero wallpaper: `/tmp/opencode/compare-desktop-hero.png`
 - Lock screen: `/tmp/opencode/compare-lock2.png`
-- Notification toast: `/tmp/opencode/compare-toast.png`
+- Notification toast: `/tmp/opencode/compare-toast2.png`
+- Dark OSD: `/tmp/opencode/compare-osd.png`
 
 The taskbar, Start and action-center comparisons use dark Windows mode references with black surfaces, matching Big Nut's defaults. The wallpaper in the full desktop capture is an original drawing, so the taskbar strip comparison is the like-for-like surface comparison. The titlebar comparison uses a Windows 10 About dialog with a default white titlebar; it has one close button because dialogs do not show minimize/maximize. The accent-colored Settings capture documents the reference's custom accent, not Big Nut's palette.
 
@@ -120,17 +121,17 @@ bars are unaffected.
   Windows field colours. The first-party `omarchy.lock` is disabled while the
   Windows theme is active; a shell restart is required after switching lock
   services because Omarchy keeps the lock service loaded.
-- `shell.notifications.toml` keeps toast cards dark (`#1f1f1f`), square,
-  white text with a blue countdown accent. Omarchy positions toasts at the
-  top-right and does not draw a separate app-name header; Windows shows them
-  bottom-right with the app name.
-- The OSD is a first-party overlay whose card uses the global shell
-  `background` colour, so it stays light despite the theme. Recolouring it
-  would require a different OSD implementation or changing the global shell
-  background, which would break dialogs and other surfaces.
+- `shared/brajam.windows-notifications` is a copied Omarchy notification
+  daemon with Windows toasts: dark cards, app-name header, and the deck moved
+  to the bottom-right above the taskbar. The action center store still receives
+  the same notification data. `shell.notifications.toml` keeps the dark colours.
+- `shared/brajam.windows-osd` replaces the first-party OSD panel: dark
+  `#1f1f1f` card, white text, blue progress bar and a top-left position, like
+  Windows 10 volume/brightness overlays. The bar is horizontal rather than
+  Windows' vertical volume slider.
 
-Evidence `/tmp/opencode/compare-lock.png` and
-`/tmp/opencode/compare-toast.png`.
+Evidence `/tmp/opencode/compare-lock2.png`, `/tmp/opencode/compare-toast2.png`
+and `/tmp/opencode/compare-osd.png`.
 
 ## Remaining layout audit
 
@@ -141,7 +142,7 @@ Evidence `/tmp/opencode/compare-lock.png` and
 | Action center | Cards are a flat list with no app grouping, per-app notification settings, expand/collapse animation or quick-action edit mode | Group by app and add a notification-settings link |
 | Taskbar | No Cortana, thumbnail previews, taskbar overflow menu or per-app jump-list frequent list; search placeholder is the 1903 wording | Add hover thumbnails and a proper overflow menu |
 | Lock screen | Custom Windows lock service now has clock/date, avatar, password field and power controls; the bottom-left account switcher, network/battery status and accessibility button are still missing | Add an account list and status icons |
-| Toasts/OSD | Toasts are dark/square with Windows colours but sit top-right and lack the app-name header; the OSD remains light because it uses the global shell background | Replace the OSD plugin or add themeable OSD tokens |
+| Toasts/OSD | Custom Windows notification and OSD plugins now provide bottom-right dark toasts with an app-name header and a dark top-left OSD; the OSD is horizontal rather than Windows 10's vertical volume slider | Add a vertical volume variant and finer toast stacking |
 
 ## Intentional deviations
 

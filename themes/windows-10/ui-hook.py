@@ -36,8 +36,12 @@ GTK_SETTINGS = (
 )
 KEYS = ("bar", "dock", "plugins", "disabledPlugins", "cloneSourceRestores")
 PINNED = ["org.gnome.Nautilus", "chromium", "foot", "libreoffice-writer"]
-LOCK_SOURCE = THEME_DIR.parent.parent / "shared/brajam.windows-lock"
-LOCK_TARGET = Path.home() / ".config/omarchy/plugins/brajam.windows-lock"
+SHARED_SOURCE = THEME_DIR.parent.parent / "shared"
+PLUGIN_SOURCES = {
+    "brajam.windows-lock": SHARED_SOURCE / "brajam.windows-lock",
+    "brajam.windows-osd": SHARED_SOURCE / "brajam.windows-osd",
+    "brajam.windows-notifications": SHARED_SOURCE / "brajam.windows-notifications",
+}
 
 
 def save(path, data):
@@ -137,16 +141,19 @@ def remove_gtk_style():
 
 
 def install_lock_plugin():
-    """Install the Windows lock service without touching a real plugin dir."""
-    if not (LOCK_SOURCE / "manifest.json").is_file():
-        return
-    LOCK_TARGET.parent.mkdir(parents=True, exist_ok=True)
-    if LOCK_TARGET.is_symlink():
-        if LOCK_TARGET.resolve() == LOCK_SOURCE.resolve():
-            return
-        LOCK_TARGET.unlink()
-    if not LOCK_TARGET.exists():
-        LOCK_TARGET.symlink_to(LOCK_SOURCE)
+    """Install the Windows lock, OSD and notification plugin symlinks."""
+    plugins_dir = Path.home() / ".config/omarchy/plugins"
+    plugins_dir.mkdir(parents=True, exist_ok=True)
+    for name, source in PLUGIN_SOURCES.items():
+        if not (source / "manifest.json").is_file():
+            continue
+        target = plugins_dir / name
+        if target.is_symlink():
+            if target.resolve() == source.resolve():
+                continue
+            target.unlink()
+        if not target.exists():
+            target.symlink_to(source)
 
 
 def install_title_shim():
@@ -286,12 +293,14 @@ def apply(config):
 
     plugins = copy.deepcopy(config.get("plugins", []))
     for plugin_id in ("brajam.windows-taskbar", "brajam.windows-clock", "brajam.windows-tray",
-                      "brajam.windows-lock"):
+                      "brajam.windows-lock", "brajam.windows-osd",
+                      "brajam.windows-notifications"):
         if not any(isinstance(item, dict) and item.get("id") == plugin_id for item in plugins):
             plugins.append({"id": plugin_id})
     disabled = copy.deepcopy(config.get("disabledPlugins", []))
     for plugin_id in ("brajam.dock", "omarchy.dock", "brajam.golden-gate-menu",
-                      "brajam.golden-gate-widgets", "omarchy.lock"):
+                      "brajam.golden-gate-widgets", "omarchy.lock",
+                      "omarchy.osd", "omarchy.notifications"):
         if plugin_id not in disabled:
             disabled.append(plugin_id)
 

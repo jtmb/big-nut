@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "brajam.windows-notifications",
+  "name": "Windows Notifications",
+  "version": "2.0.0",
+  "author": "Local",
+  "description": "Notification daemon with Windows-styled toasts",
+  "kinds": [
+    "service"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml"
+  }
+}
