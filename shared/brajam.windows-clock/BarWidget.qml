@@ -101,7 +101,7 @@ BarWidget {
     var merged = []
     var seen = ({})
     var sources = root.liveNotifications.concat(root.historyNotifications)
-    for (var i = 0; i < sources.length && merged.length < 3; i++) {
+    for (var i = 0; i < sources.length && merged.length < 6; i++) {
       var row = sources[i]
       if (!row || (row.key && seen[row.key])) continue
       if (row.key) seen[row.key] = true
@@ -237,12 +237,19 @@ BarWidget {
         color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12; font.weight: Font.DemiBold
       }
 
-      Column {
+      Flickable {
         x: 16; y: 38
         width: parent.width - 32
-        spacing: 1
+        height: 146
+        clip: true
         visible: root.notifications.length > 0
-        Repeater {
+        contentHeight: noticeColumn.height
+        boundsBehavior: Flickable.StopAtBounds
+        Column {
+          id: noticeColumn
+          width: parent.width
+          spacing: 1
+          Repeater {
           model: root.notifications
           delegate: Rectangle {
             required property var modelData
@@ -275,6 +282,7 @@ BarWidget {
               cursorShape: Qt.PointingHandCursor
               onClicked: { root.closeActionCenter(); root.bar.run("omarchy-shell notifications showHistory") }
             }
+          }
           }
         }
       }

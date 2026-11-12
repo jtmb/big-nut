@@ -24,8 +24,8 @@ default `#0078d7` accent.
 | Start content | Recently added, All apps, tiles, rail, power | Recently added, All apps, tiles, rail, power | `start-recent-half.png` |
 | Titlebar | 30px Windows 10 bar, square caption buttons | 30px white bar, square transparent buttons, Selawik | `/tmp/opencode/final4-half.png` |
 | Settings | light page, `#f2f2f2` nav, `#0078d7` accent | same palette; Home/Accounts/Time/Privacy/Update plus the existing pages | `/tmp/opencode/settings-home3.png`, `live-displays.png` |
-| Action center | dark flyout, notifications above quick actions | same structure; quick actions work and notifications are listed | `/tmp/opencode/action-notifs-half.png` |
-| Jump list | taskbar app context menu | right-click/`jump <id>` menu with Open, Pin/Unpin, Close all | `/tmp/opencode/jump-final-half.png` |
+| Action center | dark flyout, notifications above quick actions | same structure; up to six live/history notifications in a scrollable list, quick actions work | `/tmp/opencode/action-notifs2.png` |
+| Jump list | taskbar app context menu with recent files | right-click/`jump <id>` menu with Open, Pin/Unpin, Close all and recent documents from the XDG recent store | `/tmp/opencode/jump-final-half.png` |
 | Live tiles | Calendar and Weather update | Calendar shows the live date; Weather refreshes every 15 minutes from `omarchy weather status` | `/tmp/opencode/start-final2.png` |
 
 Live checks: `hyprctl getoption plugin:hyprbars:enabled` → true,
@@ -35,9 +35,9 @@ Tests: `python3 -m unittest discover -s tests -v` → 20/20.
 ## Side-by-side comparisons
 
 - Desktop: `/tmp/opencode/compare-desktop3.png`
-- Start: `/tmp/opencode/compare-start4.png`
+- Start: `/tmp/opencode/compare-start5.png`
 - Settings: `/tmp/opencode/compare-settings4.png`
-- Action center: `/tmp/opencode/compare-action3.png`
+- Action center: `/tmp/opencode/compare-action4.png`
 - Titlebar: `/tmp/opencode/compare-titlebar6.png`
 
 The reference captures use a user-selected accent color for Start/action

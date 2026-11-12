@@ -67,10 +67,10 @@ Wikimedia Commons Windows 10 taskbar and Start menu captures, the Windows 10
 Settings scale and layout capture, and Microsoft's Windows app title bar design
 guidance.
 
-Remaining deviations: the action center embeds current/history notifications
-(up to three) and links to the full history; the Calendar and Weather Start tiles are live while
-application-owned tiles remain static; taskbar jump lists provide open,
-pin/unpin and close-all but not application recent-file lists; Settings has
+Remaining deviations: the action center embeds up to six current/history
+notifications and links to the full history; the Calendar and Weather Start
+tiles are live while application-owned tiles remain static; taskbar jump lists
+provide open, pin/unpin, close-all and recent XDG documents; Settings has
 Home, Accounts, Time & language, Privacy & security, Update & security,
 Personalization, Taskbar, Display, Background and Multitasking pages; caption
 buttons do not turn red on hover. These are Linux limitations of the current

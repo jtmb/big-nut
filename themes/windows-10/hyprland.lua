@@ -50,7 +50,7 @@ if titlebars_file then
           bar_button_padding = 6,
           button_rounding = 0,
           icon_on_hover = false,
-          inactive_button_color = "#ffffff",
+          inactive_button_color = "#d0d0d0",
           on_double_click = "hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = \"maximized\", action = \"toggle\", " .. window .. " })'",
         },
       },

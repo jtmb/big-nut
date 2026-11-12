@@ -19,11 +19,20 @@ BarWidget {
   property var jumpItem: null
   property Item jumpAnchor: null
   property var itemAnchors: ({})
+  property var recentFiles: []
   readonly property var taskbarConfig: shellConfig.windowsTaskbar || ({})
   readonly property var pinnedIds: taskbarConfig.pinned !== undefined
     ? taskbarConfig.pinned
     : ["org.gnome.Nautilus", "chromium", "foot", "libreoffice-writer"]
 
+  Process {
+    id: recentProc
+    stdout: StdioCollector {
+      onStreamFinished: {
+        try { root.recentFiles = JSON.parse(text) } catch (e) { root.recentFiles = [] }
+      }
+    }
+  }
   FileView {
     path: Quickshell.env("HOME") + "/.config/omarchy/shell.json"
     watchChanges: true
@@ -153,6 +162,11 @@ BarWidget {
     root.jumpAnchor = anchor
     root.jumpItem = item
     root.jumpOpen = true
+    root.recentFiles = []
+    if (item && !recentProc.running) {
+      recentProc.command = ["python3", Quickshell.env("HOME") + "/.config/omarchy/themes/windows-10/recent-files.py", item.name]
+      recentProc.running = true
+    }
   }
   function closeJump() { root.jumpOpen = false }
   function togglePin(item) {
@@ -359,7 +373,7 @@ BarWidget {
     visible: root.jumpOpen
     color: "transparent"
     implicitWidth: 240
-    implicitHeight: root.jumpItem && root.jumpItem.running ? 150 : 118
+    implicitHeight: 150 + (root.recentFiles.length > 0 ? 24 + root.recentFiles.length * 30 : 0)
     mask: Region { item: root.jumpOpen ? jumpPanel : null }
 
     HyprlandFocusGrab {
@@ -422,6 +436,36 @@ BarWidget {
                 if (modelData.action === "open") root.openJumpItem(root.jumpItem)
                 else if (modelData.action === "pin") root.togglePin(root.jumpItem)
                 else root.closeAllWindows(root.jumpItem)
+              }
+            }
+          }
+        }
+        Item {
+          visible: root.recentFiles.length > 0
+          width: parent.width; height: 22
+          Text { x: 10; anchors.verticalCenter: parent.verticalCenter; text: "Recent"; color: "#9a9a9a"; font.family: "Selawik"; font.pixelSize: 11 }
+        }
+        Repeater {
+          model: root.recentFiles
+          delegate: Rectangle {
+            required property var modelData
+            width: parent.width; height: 30
+            color: recentMouse.containsMouse ? "#3f3f3f" : "transparent"
+            Text {
+              x: 18; anchors.verticalCenter: parent.verticalCenter
+              width: parent.width - 28
+              text: modelData.title
+              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 11
+              elide: Text.ElideRight
+            }
+            MouseArea {
+              id: recentMouse
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                root.closeJump()
+                root.bar.run("xdg-open " + Util.shellQuote(modelData.uri))
               }
             }
           }

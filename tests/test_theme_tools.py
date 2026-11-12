@@ -272,6 +272,28 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn("WindowsSettings", taskbar)
         self.assertIn('settingsView.open("home")', taskbar)
 
+    def test_windows_recent_files_helper(self):
+        share = self.home / ".local/share"
+        share.mkdir(parents=True)
+        (share / "recently-used.xbel").write_text(
+            '<?xml version="1.0"?>'
+            '<xbel xmlns="http://www.freedesktop.org/standards/desktop-bookmarks" '
+            'xmlns:bookmark="http://www.freedesktop.org/standards/desktop-bookmarks">'
+            '<bookmark href="file:///home/user/report.odt" modified="2026-01-02T00:00:00Z">'
+            '<info><metadata owner="http://freedesktop.org">'
+            '<bookmark:application name="LibreOffice Writer"/>'
+            '</metadata></info></bookmark>'
+            '<bookmark href="file:///home/user/photo.jpg" modified="2026-01-03T00:00:00Z">'
+            '<info><metadata owner="http://freedesktop.org">'
+            '<bookmark:application name="Files"/>'
+            '</metadata></info></bookmark>'
+            '</xbel>')
+        result = subprocess.run(["python3", str(WINDOWS / "recent-files.py"), "Files"],
+                                env=self.env, check=True, capture_output=True, text=True)
+        rows = json.loads(result.stdout)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["title"], "photo.jpg")
+
     def test_windows_taskbar_pin_script(self):
         self.run_tool("ui-hook.py", "windows-10", theme=WINDOWS)
         subprocess.run(["bash", str(WINDOWS / "taskbar-pin.sh"), "pin", "chromium"],
