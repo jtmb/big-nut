@@ -33,6 +33,10 @@ metric-compatible Segoe UI substitute.
   builds it against the installed Hyprland headers into
   `~/.local/share/windows-10-titlebars/titlebars.so`, loads it as `winbars`,
   and disables the stock `hyprbars` plugin against double decorations.
+- Lock/toasts: `shell.lock.toml` gives the lock field Windows colours;
+  `shell.notifications.toml` keeps dark square toast cards. Omarchy's lock QML
+  and OSD still own their layout, so the Windows clock/avatar and dark OSD are
+  not reproduced.
 - GTK: `GTK_CSD=0` is set through Hyprland and
   `~/.config/environment.d/90-windows-10.conf`. `gtk/` contains GTK3/GTK4 CSS
   and a settings file that make header bars white, square and Windows-ordered

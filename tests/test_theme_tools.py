@@ -468,6 +468,8 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertTrue((WINDOWS / "backgrounds/windows-10-hero.svg").is_file())
         self.assertTrue((WINDOWS / "backgrounds/1-windows-10-blue.webp").is_file())
         self.assertIn("Microsoft copyright", (WINDOWS / "backgrounds/README.md").read_text())
+        self.assertIn("#0078d7", (WINDOWS / "shell.lock.toml").read_text())
+        self.assertIn("#1f1f1f", (WINDOWS / "shell.notifications.toml").read_text())
         shim = (WINDOWS / "gtk/title-left-shim.c").read_text()
         self.assertIn("hdy_header_bar_pack_start", shim)
         self.assertIn("adw_header_bar_pack_start", shim)

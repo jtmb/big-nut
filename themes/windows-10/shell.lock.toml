@@ -1,0 +1,13 @@
+# Windows 10 lock screen colours: white password field, black text,
+# Windows blue focus outline and red failure state.
+background       = "#ffffff"
+background-alpha = 1.0
+text             = "#000000"
+placeholder      = "#666666"
+text-error       = "#c50f1f"
+border           = "#ffffff"
+border-alpha     = 1.0
+border-active    = "#0078d7"
+border-error     = "#e81123"
+selection        = "#cce8ff"
+selection-alpha  = 1.0
