@@ -55,13 +55,14 @@ pins; edit it or use the START menu's pinned app list as a starting point.
 ## Fidelity notes
 
 The taskbar height (40px), black taskbar, 24px app icons in 40px slots,
-two-line clock, Start rail/tile proportions, square surfaces, light Settings
-palette and `#0078d7` accent follow Windows 10 at 100% scale. Linux applications
-draw their own title bars and menus, so this theme cannot reproduce every
-Windows app chrome; those parts are intentionally left to the applications.
-The Start rail's Settings button opens Omarchy's system menu, and the action
-center opens Omarchy's notification history rather than a full Windows quick
-actions pane. The reference screenshots used while building this were the
+two-line clock, Start rail/tile proportions, square surfaces, 30px white window
+caption bars with square min/max/close buttons, light Settings palette and
+`#0078d7` accent follow Windows 10 at 100% scale. The title bars come from
+Omarchy's titlebar plugin with a Windows-styled configuration; applications
+still draw their own client-area chrome and menus. Start's Settings button opens
+the Windows Settings window (Personalization, Taskbar, Display, Background and
+Multitasking), and the action center opens Omarchy's notification history rather
+than a full Windows quick-actions pane. The reference screenshots used while building this were the
 Wikimedia Commons Windows 10 taskbar and Start menu captures, the Windows 10
 Settings scale and layout capture, and Microsoft's Windows app title bar design
 guidance.

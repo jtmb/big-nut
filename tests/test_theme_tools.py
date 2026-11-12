@@ -48,6 +48,9 @@ class ThemeToolsTest(unittest.TestCase):
         stub.parent.mkdir()
         stub.write_text("#!/bin/sh\nexit 0\n")
         stub.chmod(0o755)
+        hyprctl = self.home / "bin/hyprctl"
+        hyprctl.write_text("#!/bin/sh\nexit 0\n")
+        hyprctl.chmod(0o755)
         self.env = dict(os.environ, HOME=str(self.home), XDG_STATE_HOME=str(self.home / ".local/state"), OMARCHY_PATH="/usr/share/omarchy",
                         PATH=str(stub.parent) + os.pathsep + os.environ["PATH"])
 
@@ -258,6 +261,16 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertTrue(state["nightlight"]["enabled"])
         self.assertFalse(state["mirror"])
         self.assertTrue(state["external"])
+
+    def test_windows_theme_has_windows_titlebars_and_settings(self):
+        lua = (WINDOWS / "hyprland.lua").read_text()
+        self.assertIn("bar_height = 30", lua)
+        self.assertIn('bar_color = "#ffffff"', lua)
+        self.assertIn("button_rounding = 0", lua)
+        self.assertIn("add_button", lua)
+        taskbar = (ROOT / "shared/brajam.windows-taskbar/BarWidget.qml").read_text()
+        self.assertIn("WindowsSettings", taskbar)
+        self.assertIn('settingsView.open("appearance")', taskbar)
 
     def test_windows_theme_applies_taskbar_and_rolls_back(self):
         self.run_tool("ui-hook.py", "windows-10", theme=WINDOWS)

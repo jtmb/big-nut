@@ -47,9 +47,12 @@ PopupWindow {
     entries.sort(function(a, b) { return String(a.name).localeCompare(String(b.name)) })
     var rows = []
     var letter = ""
+    var seen = {}
     for (var i = 0; i < entries.length; i++) {
       var entry = entries[i]
       if (!entry || entry.noDisplay || !root.matches(entry.name)) continue
+      if (seen[entry.name]) continue
+      seen[entry.name] = true
       var first = String(entry.name).charAt(0).toUpperCase()
       if (first !== letter) { letter = first; rows.push({ type: "letter", text: letter }) }
       rows.push({ type: "app", name: entry.name, entry: entry })

@@ -29,9 +29,10 @@ PopupWindow {
       var wayland = toplevels[i].wayland
       if (!wayland || wayland.parent) continue
       var entry = DesktopEntries.heuristicLookup(String(wayland.appId || ""))
+      var openCode = String(wayland.appId || "") === "org.omarchy.agent"
       result.push({
-        title: String(toplevels[i].title || (entry ? entry.name : wayland.appId) || "Window"),
-        icon: entry ? entry.icon : "application-x-executable",
+        title: String(toplevels[i].title || (entry ? entry.name : (openCode ? "OpenCode" : wayland.appId)) || "Window"),
+        icon: openCode ? "file:///usr/share/omarchy/shell/plugins/agents/assets/opencode.svg" : (entry ? entry.icon : "application-x-executable"),
         toplevel: toplevels[i]
       })
     }

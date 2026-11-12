@@ -116,6 +116,11 @@ def rollback(config):
                 config.pop(key, None)
 
     save(CONFIG, config)
+    # Hyprland keeps a loaded plugin across theme switches; do not leave the
+    # white Windows caption bars on the next theme.
+    subprocess.run(["hyprctl", "eval",
+                    "hl.config({ plugin = { hyprbars = { enabled = false } } })"],
+                   check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     STATE.unlink()
 
 

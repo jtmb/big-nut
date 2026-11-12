@@ -41,6 +41,8 @@ BarWidget {
   }
 
   function iconFor(item) {
+    if (item && item.key === "org.omarchy.agent")
+      return "file:///usr/share/omarchy/shell/plugins/agents/assets/opencode.svg"
     var icon = item && item.entry && item.entry.icon ? item.entry.icon : "application-x-executable"
     return Quickshell.iconPath(icon, true)
   }
@@ -66,7 +68,7 @@ BarWidget {
       var appEntry = root.entryForAppId(wayland.appId)
       var key = appEntry ? appEntry.id : wayland.appId
       if (!byKey[key]) {
-        var added = { key: key, name: appEntry ? appEntry.name : wayland.appId, entry: appEntry || null, windows: [] }
+        var added = { key: key, name: appEntry ? appEntry.name : (key === "org.omarchy.agent" ? "OpenCode" : wayland.appId), entry: appEntry || null, windows: [] }
         result.push(added)
         byKey[key] = added
       }
@@ -300,7 +302,7 @@ BarWidget {
     query: root.searchQuery
     onDismissed: root.startOpen = false
     onLaunchRequested: function(entry) { root.launch(entry); root.closeStart() }
-    onSettingsRequested: { root.closeStart(); root.bar.run("omarchy menu toggle system") }
+    onSettingsRequested: { root.closeStart(); settingsView.open("appearance") }
   }
 
   TaskView {
@@ -309,11 +311,23 @@ BarWidget {
     onDismissed: root.taskViewOpen = false
   }
 
+  WindowsSettings {
+    id: settingsView
+    bar: root.bar
+  }
+
   ShellIpc {
     target: "brajam.windows-taskbar"
     function start(): void { root.toggleStart() }
     function search(text: string): void { root.openSearch(String(text || "")) }
     function taskview(): void { root.toggleTaskView() }
+    function settings(page: string): void { root.closeStart(); settingsView.open(page || "appearance") }
+    function closesettings(): void { settingsView.close() }
     function hide(): void { root.closeStart(); taskView.close() }
+    function debugItems(): string {
+      return JSON.stringify(root.items.map(function(item) {
+        return { key: item.key, name: item.name, running: item.running, active: item.active, count: item.windows.length }
+      }))
+    }
   }
 }

@@ -138,7 +138,9 @@ Golden Gate variant. It uses a 40px black taskbar at the bottom:
 left, `brajam.windows-tray` + Omarchy network/audio/battery +
 `brajam.windows-clock` (two-line clock, notification action center, Show desktop) on the
 right. The Start menu is the taskbar's own dark rail, all-apps list, live tiles
-and power flyout.
+and power flyout. The same taskbar plugin hosts the Windows Settings window,
+opened from Start's Settings button; it has Personalization, Taskbar, Display,
+Background and Multitasking pages.
 
 The hook `libs/windows-10-ui-hook.sh` installs Selawik (SIL OFL Segoe UI
 metric-compatible font files under `themes/windows-10/fonts/`), snapshots the
@@ -146,7 +148,8 @@ current bar/plugin lists, places the Windows widgets, disables the Golden Gate
 dock/menu/widget plugins, and rolls everything back on the next theme switch.
 `windowsTaskbar.pinned` in `shell.json` stores the taskbar pins. The theme's
 `hyprland.lua` sets square zero-gap windows, opaque surfaces and the
-`#0078d7` accent border.
+`#0078d7` accent border, and loads Omarchy's titlebar plugin with a 30px white
+bar and square Windows caption buttons for every window.
 
 References used: the Wikimedia Commons Windows 10 taskbar and Start captures,
 the Windows 10 Settings scale-and-layout capture, and Microsoft's Windows app
