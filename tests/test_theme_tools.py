@@ -315,6 +315,20 @@ class ThemeToolsTest(unittest.TestCase):
         rows = json.loads(result.stdout)
         self.assertEqual([row["title"] for row in rows], ["photo.jpg"])
 
+    def test_windows_notification_dismissed_store(self):
+        helper = WINDOWS / "notification-dismissed.py"
+        subprocess.run(["python3", str(helper), "add", "one", "two"], env=self.env,
+                       check=True, capture_output=True, text=True)
+        result = subprocess.run(["python3", str(helper), "list"], env=self.env,
+                                check=True, capture_output=True, text=True)
+        self.assertEqual(json.loads(result.stdout), ["one", "two"])
+        subprocess.run(["python3", str(helper), "add", "two", "three"], env=self.env,
+                       check=True, capture_output=True, text=True)
+        result = subprocess.run(["python3", str(helper), "list"], env=self.env,
+                                check=True, capture_output=True, text=True)
+        self.assertEqual(json.loads(result.stdout), ["one", "two", "three"])
+        self.assertTrue((self.home / ".local/state/omarchy/windows-10-dismissed.json").is_file())
+
     def test_windows_taskbar_pin_script(self):
         self.run_tool("ui-hook.py", "windows-10", theme=WINDOWS)
         subprocess.run(["bash", str(WINDOWS / "taskbar-pin.sh"), "pin", "chromium"],
@@ -339,6 +353,10 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn("clearNotifications", clock)
         self.assertIn("dismissedKeys", clock)
         self.assertIn("notificationIcon", clock)
+        self.assertIn("activateNotification", clock)
+        self.assertIn("execArgv", clock)
+        self.assertIn("notification-dismissed.py", clock)
+        self.assertIn("dismissedPending", clock)
         self.assertIn('"Screen snip"', clock)
         self.assertIn("liveView", clock)
         self.assertIn("mergeNotifications", clock)
@@ -353,6 +371,8 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn("Flow {", start)
         self.assertIn("wide: true", start)
         self.assertIn("modelData.wide", start)
+        self.assertIn("large: entry.id", start)
+        self.assertIn("modelData.large", start)
         self.assertIn('"Productivity"', start)
         self.assertIn('"Explore"', start)
         self.assertIn("Mpris.players", start)

@@ -22,10 +22,10 @@ default `#0078d7` accent.
 | Clock | two lines, time over date | two lines, `h:mm AP` over `M/d/yyyy` | `/tmp/opencode/final-desktop2-half.png` |
 | Start size | about 640×600 at 1080p | 640×600 | `/tmp/opencode/compare-start-final.png` |
 | Start palette | dark `#1f1f1f` by default | `#1f1f1f` with `#191919` rail | `start-recent-half.png` |
-| Start content | Recently added, All apps, grouped medium/wide tiles, rail, power | Recently added, All apps, grouped medium/wide tiles (Life at a glance, Productivity, Explore), rail, power | `/tmp/opencode/compare-start-wide.png` |
+| Start content | Recently added, All apps, grouped medium/wide/large tiles, rail, power | Recently added, All apps, grouped medium/wide/large tiles (Life at a glance, Productivity, Explore), rail, power | `/tmp/opencode/compare-start-large.png` |
 | Titlebar | 30px white bar, square caption buttons, red `#e81123` close hover | 30px white bar, left-aligned Selawik title, square buttons, red close hover; GTK3 SSD apps match, GTK4 CSD apps keep one app-drawn header | `/tmp/opencode/compare-titlebar-gtk.png` |
 | Settings | drop-down scale, text size, display resolution, orientation | drop-down scale and text size, brightness, Night Shift; same sidebar order | `/tmp/opencode/compare-settings-dropdown.png` |
-| Action center | dark flyout, notification cards above a 4-column quick-action grid | live cards with icon, summary, app, time, per-card dismiss and Clear all; 4-column quick actions | `/tmp/opencode/compare-action-cards2.png` |
+| Action center | dark flyout, notification cards above a 4-column quick-action grid | live cards with icon, summary, app, time, click-to-invoke, per-card dismiss and Clear all; dismissed keys persist | `/tmp/opencode/compare-action-cards4.png` |
 | Jump list | taskbar app context menu with recent files | right-click/`jump <id>` menu with Open, Pin/Unpin, Close all and recent documents from the XDG recent store | `/tmp/opencode/jump-final-half.png` |
 | Live tiles | Calendar, Weather and media update | Calendar shows the live date; Weather refreshes every 15 minutes; a Now Playing tile follows MPRIS players | `/tmp/opencode/start-final2.png` |
 
@@ -57,10 +57,10 @@ Live checks: `plugin:winbars:enabled` → true, `bar_height` → 30,
 
 ## Side-by-side comparisons
 
-- Taskbar/desktop: `/tmp/opencode/compare-taskbar-final4.png` (same black-taskbar layout; the reference uses a black wallpaper and the 1607 search placeholder)
-- Start (like-for-like dark, grouped wide tiles): `/tmp/opencode/compare-start-wide.png`
+- Taskbar/desktop: `/tmp/opencode/compare-taskbar-final5.png` (same black-taskbar layout; the reference uses a black wallpaper and the 1607 search placeholder)
+- Start (like-for-like dark, grouped wide/large tiles): `/tmp/opencode/compare-start-large.png`
 - Settings: `/tmp/opencode/compare-settings-dropdown.png`
-- Action center (like-for-like dark, live cards): `/tmp/opencode/compare-action-cards2.png`
+- Action center (like-for-like dark, live clickable cards): `/tmp/opencode/compare-action-cards4.png`
 - Titlebar on a GTK app + close hover: `/tmp/opencode/compare-titlebar-gtk.png`
 - Titlebar default-white reference: `/tmp/opencode/compare-titlebar-default.png`
 
@@ -69,13 +69,15 @@ The taskbar, Start and action-center comparisons use dark Windows mode reference
 ## Intentional deviations
 
 - The action center shows up to six live/history entries as cards with an app
-  icon, time, per-card dismiss and Clear all. Dismissing a history entry hides
-  it for the session because Omarchy's history file is read-only to the shell;
-  clicking a card opens the full notification history.
+  icon, time, click-to-invoke, per-card dismiss and Clear all. Clicking a card
+  runs its `execArgv` command or opens its link; entries without either open
+  the notification history. Dismissed keys persist in
+  `~/.local/state/omarchy/windows-10-dismissed.json`, so cleared history cards
+  stay hidden across restarts (Omarchy's history file itself is read-only).
 - Calendar, Weather and MPRIS Now Playing tiles are live and grouped as
-  Life at a glance, Productivity and Explore; Calendar, LibreOffice Writer and
-  Now Playing use wide tiles. Other tiles are static because their feeds are
-  application-owned. Jump lists include recent
+  Life at a glance, Productivity and Explore. Calendar, LibreOffice Writer and
+  Now Playing use wide tiles; Files uses a large 2x2 tile. Other tiles are
+  static because their feeds are application-owned. Jump lists include recent
   XDG documents. The live store was populated by opening a real document in
   LibreOffice Writer and verified through the jump-list Recent row.
 - Settings provides the Windows 10 sidebar order and drop-down scale/text-size

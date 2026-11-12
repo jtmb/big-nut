@@ -132,7 +132,10 @@ PopupWindow {
     for (var i = 0; i < ids.length; i++) {
       var entry = DesktopEntries.byId(ids[i])
       if (!entry || entry.noDisplay) continue
-      out.push({ entry: entry, name: entry.name, wide: entry.id === "libreoffice-writer", color: root.tileColor(entry.id) })
+      out.push({ entry: entry, name: entry.name,
+                 wide: entry.id === "libreoffice-writer",
+                 large: entry.id === "org.gnome.Nautilus",
+                 color: root.tileColor(entry.id) })
     }
     return out
   }
@@ -142,8 +145,8 @@ PopupWindow {
     for (var i = 0; i < all.length; i++) {
       var tile = all[i]
       var id = tile.entry ? String(tile.entry.id) : ""
-      if (tile.calendar || tile.weather || id === "org.gnome.Nautilus") life.push(tile)
-      else if (id === "libreoffice-writer" || id === "omawrite" || id === "omacalc") productivity.push(tile)
+      if (tile.calendar || tile.weather) life.push(tile)
+      else if (id === "libreoffice-writer" || id === "omawrite") productivity.push(tile)
       else explore.push(tile)
     }
     var groups = []
@@ -167,7 +170,7 @@ PopupWindow {
   visible: shown || card.opacity > 0
   color: "transparent"
   implicitWidth: 640 + (expandedRail ? 112 : 0)
-  implicitHeight: 600
+  implicitHeight: 640
   mask: Region { item: root.shown ? card : null }
 
   onShownChanged: {
@@ -429,12 +432,19 @@ PopupWindow {
       width: parent.width - x
       height: parent.height
       visible: !(root.searchMode && root.query.length > 0)
-      Column {
+      Flickable {
         x: 16; y: 40
         width: parent.width - 28
-        spacing: 14
-        Repeater {
-          model: root.tileGroups
+        height: parent.height - 48
+        clip: true
+        contentHeight: tileGroupColumn.height
+        boundsBehavior: Flickable.StopAtBounds
+        Column {
+          id: tileGroupColumn
+          width: parent.width
+          spacing: 14
+          Repeater {
+            model: root.tileGroups
           delegate: Column {
             required property var modelData
             width: parent.width
@@ -450,8 +460,8 @@ PopupWindow {
                 model: modelData.tiles
                 delegate: Rectangle {
                   required property var modelData
-                  width: modelData.wide === true ? 204 : 100
-                  height: 100
+                  width: modelData.wide === true || modelData.large === true ? 204 : 100
+                  height: modelData.large === true ? 204 : 100
                   color: modelData.color
                   border.width: tileMouse.containsMouse ? 1 : 0
                   border.color: "#ffffff"
@@ -554,6 +564,7 @@ PopupWindow {
                 }
               }
             }
+          }
           }
         }
       }

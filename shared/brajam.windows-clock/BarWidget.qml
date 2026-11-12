@@ -21,6 +21,7 @@ BarWidget {
   property var historyNotifications: []
   property var notifications: []
   property var dismissedKeys: ({})
+  property bool dismissedPending: false
 
   readonly property string timeText: Qt.formatDateTime(now, "h:mm AP")
   readonly property string dateText: Qt.formatDateTime(now, "M/d/yyyy")
@@ -61,6 +62,34 @@ BarWidget {
       }
     }
   }
+  Process {
+    id: dismissedReader
+    command: ["python3", Quickshell.env("HOME") + "/.config/omarchy/themes/windows-10/notification-dismissed.py", "list"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        try {
+          var rows = JSON.parse(text)
+          var map = ({})
+          for (var i = 0; i < rows.length; i++) map[String(rows[i])] = true
+          root.dismissedKeys = map
+          root.mergeNotifications()
+        } catch (e) {}
+      }
+    }
+  }
+  Process {
+    id: dismissedWriter
+    command: ["python3", Quickshell.env("HOME") + "/.config/omarchy/themes/windows-10/notification-dismissed.py", "add"]
+    onExited: {
+      if (root.dismissedPending) {
+        root.dismissedPending = false
+        root.persistDismissed()
+      } else if (!dismissedReader.running) {
+        dismissedReader.running = true
+      }
+    }
+  }
+  Component.onCompleted: if (!dismissedReader.running) dismissedReader.running = true
   Process {
     id: countReader
     command: ["omarchy-shell", "notifications", "count"]
@@ -134,13 +163,46 @@ BarWidget {
     root.bar.run(command)
     actionRefresh.restart()
   }
+  function persistDismissed() {
+    var keys = []
+    for (var key in root.dismissedKeys) keys.push(key)
+    if (dismissedWriter.running) { root.dismissedPending = true; return }
+    dismissedWriter.command = ["python3", Quickshell.env("HOME") + "/.config/omarchy/themes/windows-10/notification-dismissed.py", "add"].concat(keys)
+    dismissedWriter.running = true
+  }
   function dismissNotification(notification) {
     if (!notification) return
     if (notification.key) root.dismissedKeys[notification.key] = true
     var summary = notification.summary ? String(notification.summary) : ""
     if (summary) root.bar.run("omarchy-shell notifications dismiss " + Util.shellQuote(summary))
     root.mergeNotifications()
+    root.persistDismissed()
     actionRefresh.restart()
+  }
+  function activateNotification(notification) {
+    if (!notification) return
+    var argv = null
+    if (notification.execArgv) {
+      try {
+        argv = typeof notification.execArgv === "string" ? JSON.parse(notification.execArgv) : notification.execArgv
+      } catch (e) { argv = null }
+    }
+    root.closeActionCenter()
+    if (argv && argv.length) {
+      if (notification.key) root.dismissedKeys[notification.key] = true
+      var summary = notification.summary ? String(notification.summary) : ""
+      if (summary) root.bar.run("omarchy-shell notifications dismiss " + Util.shellQuote(summary))
+      root.mergeNotifications()
+      root.persistDismissed()
+      Util.execArgv(argv)
+      actionRefresh.restart()
+      return
+    }
+    if (notification.link && String(notification.link).length) {
+      root.bar.run("xdg-open " + Util.shellQuote(String(notification.link)))
+      return
+    }
+    root.bar.run("omarchy-shell notifications showHistory")
   }
   function clearNotifications() {
     for (var i = 0; i < root.notifications.length; i++) {
@@ -149,6 +211,7 @@ BarWidget {
     }
     root.notifications = []
     root.bar.run("omarchy-shell notifications dismissAll")
+    root.persistDismissed()
     actionRefresh.restart()
   }
 
@@ -355,7 +418,7 @@ BarWidget {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: { root.closeActionCenter(); root.bar.run("omarchy-shell notifications showHistory") }
+                onClicked: root.activateNotification(modelData)
               }
             }
           }
