@@ -30,6 +30,8 @@ jq -n \
       model,
       width,
       height,
+      x,
+      y,
       refreshRate,
       scale,
       transform,

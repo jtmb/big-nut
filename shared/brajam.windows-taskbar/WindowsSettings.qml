@@ -32,6 +32,19 @@ Item {
     return null
   }
   readonly property real displayScale: focusedDisplay ? focusedDisplay.scale : 0
+  readonly property var displayModes: focusedDisplay && focusedDisplay.modes ? focusedDisplay.modes : []
+  readonly property int displayModeIndex: {
+    if (!focusedDisplay) return 0
+    for (var i = 0; i < displayModes.length; i++) {
+      var match = String(displayModes[i]).match(/^(\d+)x(\d+)@([0-9.]+)Hz$/)
+      if (match && Number(match[1]) === Number(focusedDisplay.width) && Number(match[2]) === Number(focusedDisplay.height)) return i
+    }
+    return 0
+  }
+  readonly property int orientationIndex: {
+    var transform = focusedDisplay ? Number(focusedDisplay.transform || 0) : 0
+    return transform >= 0 && transform <= 3 ? transform : 0
+  }
   // Omarchy's monitor panel offers these scale presets; keep a custom current
   // scale visible too, so the Scale control always has a selected value.
   readonly property var scalePresets: [1, 1.25, 1.6, 2, 3, 4]
@@ -181,6 +194,28 @@ Item {
   function chooseMode(mode) { root.opacityMode = mode; root.run("omarchy hyprland window transparency " + mode) }
   function displayScalePreset(scale) { root.run("omarchy hyprland monitor scaling " + scale); displayRefresh.restart() }
   function formatScale(value) { return Math.round(value * 100) + "%" }
+  function formatMode(mode) {
+    var match = String(mode || "").match(/^(\d+)x(\d+)@([0-9.]+)Hz$/)
+    return match ? match[1] + " × " + match[2] + " · " + Math.round(Number(match[3])) + " Hz" : String(mode || "")
+  }
+  function currentMode() {
+    if (!root.focusedDisplay) return ""
+    if (root.displayModes.length > 0) return String(root.displayModes[root.displayModeIndex])
+    return root.focusedDisplay.width + "x" + root.focusedDisplay.height + "@" + Number(root.focusedDisplay.refreshRate || 60).toFixed(2)
+  }
+  function applyMonitorMode(mode, transform) {
+    if (!root.focusedDisplay) return
+    var expression = "hl.monitor({ output = \"" + root.focusedDisplay.name + "\", mode = \"" + mode
+      + "\", position = \"" + Number(root.focusedDisplay.x || 0) + "x" + Number(root.focusedDisplay.y || 0)
+      + "\", scale = " + root.displayScale + ", transform = " + transform + " })"
+    root.run("hyprctl eval " + Util.shellQuote(expression))
+    displayRefresh.restart()
+  }
+  function setResolution(mode) { root.applyMonitorMode(String(mode), root.orientationIndex) }
+  function setOrientation(index) {
+    var transform = [0, 1, 2, 3][Math.max(0, Math.min(3, Math.round(index)))]
+    root.applyMonitorMode(root.currentMode(), transform)
+  }
   function setTextSize(index) {
     var i = Math.max(0, Math.min(root.textSizeStops.length - 1, Math.round(index)))
     textSizeSlider.liveValue = i
@@ -810,6 +845,40 @@ Item {
                   options: root.scaleChoices.map(root.formatScale)
                   currentIndex: root.scaleIndex
                   onChosen: function(index) { root.displayScalePreset(root.scaleChoices[index]) }
+                }
+              }
+              Rectangle {
+                width: parent.width; height: 74; radius: 2; color: root.group
+                z: resolutionDropdown.expanded ? 10 : 0
+                Label { x: 14; y: 13; text: "Display resolution"; font.pixelSize: 13 }
+                Label {
+                  anchors.right: parent.right; anchors.rightMargin: 14; y: 14
+                  color: root.secondary; font.pixelSize: 11
+                  text: root.displayModes.length > 0 ? root.formatMode(root.displayModes[root.displayModeIndex]) : ""
+                }
+                SettingsDropdown {
+                  id: resolutionDropdown
+                  x: 14; y: 36; width: parent.width - 28
+                  options: root.displayModes.map(root.formatMode)
+                  currentIndex: root.displayModeIndex
+                  onChosen: function(index) { root.setResolution(root.displayModes[index]) }
+                }
+              }
+              Rectangle {
+                width: parent.width; height: 74; radius: 2; color: root.group
+                z: orientationDropdown.expanded ? 10 : 0
+                Label { x: 14; y: 13; text: "Display orientation"; font.pixelSize: 13 }
+                Label {
+                  anchors.right: parent.right; anchors.rightMargin: 14; y: 14
+                  color: root.secondary; font.pixelSize: 11
+                  text: ["Landscape", "Portrait", "Landscape (flipped)", "Portrait (flipped)"][root.orientationIndex]
+                }
+                SettingsDropdown {
+                  id: orientationDropdown
+                  x: 14; y: 36; width: parent.width - 28
+                  options: ["Landscape", "Portrait", "Landscape (flipped)", "Portrait (flipped)"]
+                  currentIndex: root.orientationIndex
+                  onChosen: function(index) { root.setOrientation(index) }
                 }
               }
               Rectangle {

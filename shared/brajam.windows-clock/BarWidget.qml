@@ -170,6 +170,33 @@ BarWidget {
     dismissedWriter.command = ["python3", Quickshell.env("HOME") + "/.config/omarchy/themes/windows-10/notification-dismissed.py", "add"].concat(keys)
     dismissedWriter.running = true
   }
+  function slug(text) {
+    return String(text || "").toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^[-.]+|[-.]+$/g, "")
+  }
+  function notificationIcon(row) {
+    if (!row) return ""
+    var icon = String(row.appIcon || "")
+    var source = String(row.source || "")
+    var app = String(row.app || "")
+    var names = [icon, source, app, root.slug(icon), root.slug(source), root.slug(app)]
+    for (var i = 0; i < names.length; i++) {
+      var name = names[i]
+      if (!name) continue
+      if (name.charAt(0) === "/") return Util.fileUrl(name)
+      var found = Quickshell.iconPath(name, true)
+      if (found) return found
+      var entry = DesktopEntries.heuristicLookup(name)
+      if (entry && entry.icon) {
+        found = Quickshell.iconPath(entry.icon, true)
+        if (found) return found
+      }
+    }
+    return ""
+  }
+  function glyphFamily(glyph) {
+    var code = String(glyph || "").codePointAt(0)
+    return code >= 0xe900 && code <= 0xe9ff ? "omarchy" : "JetBrainsMono Nerd Font"
+  }
   function dismissNotification(notification) {
     if (!notification) return
     if (notification.key) root.dismissedKeys[notification.key] = true
@@ -363,20 +390,24 @@ BarWidget {
               required property var modelData
               width: parent.width; height: 56
               color: notificationMouse.containsMouse ? "#2f2f2f" : "transparent"
+              property string iconSource: root.notificationIcon(modelData)
 
               Rectangle {
                 x: 8; y: 8; width: 30; height: 30; radius: 2
                 color: "#0078d7"
                 Text {
                   anchors.centerIn: parent
-                  visible: notificationIcon.status !== Image.Ready
-                  text: "\uf0f3"
-                  color: "#ffffff"; font.family: "Font Awesome 7 Free Solid"; font.pixelSize: 13
+                  visible: (modelData.glyph && String(modelData.glyph).length > 0) || notificationIcon.status !== Image.Ready
+                  text: modelData.glyph && String(modelData.glyph).length > 0 ? String(modelData.glyph) : "\uf0f3"
+                  color: "#ffffff"
+                  font.family: modelData.glyph && String(modelData.glyph).length > 0 ? root.glyphFamily(modelData.glyph) : "Font Awesome 7 Free Solid"
+                  font.pixelSize: modelData.glyph && String(modelData.glyph).length > 0 ? 16 : 13
                 }
                 Image {
                   id: notificationIcon
                   anchors.fill: parent
-                  source: modelData.appIcon && String(modelData.appIcon).length > 0 ? Quickshell.iconPath(String(modelData.appIcon), true) : ""
+                  visible: !(modelData.glyph && String(modelData.glyph).length > 0) && status === Image.Ready
+                  source: parent.parent.iconSource
                   fillMode: Image.PreserveAspectFit
                 }
               }

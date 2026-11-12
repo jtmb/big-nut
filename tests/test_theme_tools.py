@@ -357,6 +357,9 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn("execArgv", clock)
         self.assertIn("notification-dismissed.py", clock)
         self.assertIn("dismissedPending", clock)
+        self.assertIn("notificationIcon(row)", clock)
+        self.assertIn("glyphFamily", clock)
+        self.assertIn("heuristicLookup", clock)
         self.assertIn('"Screen snip"', clock)
         self.assertIn("liveView", clock)
         self.assertIn("mergeNotifications", clock)
@@ -389,6 +392,10 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn("SettingsDropdown", settings)
         self.assertIn("Change the size of text, apps, and other items", settings)
         self.assertIn("scaleDropdown", settings)
+        self.assertIn("Display resolution", settings)
+        self.assertIn("Display orientation", settings)
+        self.assertIn("setResolution", settings)
+        self.assertIn("setOrientation", settings)
 
     def test_windows_theme_applies_taskbar_and_rolls_back(self):
         self.run_tool("ui-hook.py", "windows-10", theme=WINDOWS)
