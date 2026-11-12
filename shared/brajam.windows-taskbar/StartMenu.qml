@@ -16,6 +16,8 @@ PopupWindow {
   property bool expandedRail: false
   property bool powerOpen: false
   property bool weatherOpen: false
+  property bool calendarOpen: false
+  property date now: new Date()
   property string weatherStatus: ""
   property string weatherTemp: ""
   property string weatherLocation: ""
@@ -54,6 +56,24 @@ PopupWindow {
     onTriggered: if (!weatherProc.running) weatherProc.running = true
   }
   Component.onCompleted: if (!weatherProc.running) weatherProc.running = true
+  Timer {
+    interval: 60000
+    repeat: true
+    running: true
+    onTriggered: root.now = new Date()
+  }
+  function calendarCells() {
+    var year = root.now.getFullYear()
+    var month = root.now.getMonth()
+    var first = new Date(year, month, 1).getDay()
+    var days = new Date(year, month + 1, 0).getDate()
+    var cells = []
+    for (var i = 0; i < 42; i++) {
+      var day = i - first + 1
+      cells.push(day >= 1 && day <= days ? day : 0)
+    }
+    return cells
+  }
   function parseWeather() { if (!weatherProc.running) weatherProc.running = true }
 
   function open(anchor, text, search) {
@@ -62,6 +82,8 @@ PopupWindow {
     query = String(text || "")
     searchMode = search === true
     powerOpen = false
+    weatherOpen = false
+    calendarOpen = false
     root.shown = true
   }
   function close() {
@@ -97,7 +119,8 @@ PopupWindow {
   function buildTiles() {
     var ids = ["org.gnome.Nautilus", "chromium", "foot", "libreoffice-writer",
                "org.gnome.Papers", "mpv", "omawrite", "omacalc"]
-    var out = [{ weather: true, name: "Weather", color: "#0078d7" }]
+    var out = [{ calendar: true, name: "Calendar", color: "#0078d7" },
+               { weather: true, name: "Weather", color: "#0078d7" }]
     for (var i = 0; i < ids.length; i++) {
       var entry = DesktopEntries.byId(ids[i])
       if (!entry || entry.noDisplay) continue
@@ -309,6 +332,7 @@ PopupWindow {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                 if (modelData.weather) root.weatherOpen = true
+                else if (modelData.calendar) root.calendarOpen = true
                 else root.launchRequested(modelData.entry)
               }
               }
@@ -362,6 +386,7 @@ PopupWindow {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                 if (modelData.weather) root.weatherOpen = true
+                else if (modelData.calendar) root.calendarOpen = true
                 else root.launchRequested(modelData.entry)
               }
               }
@@ -396,8 +421,29 @@ PopupWindow {
             color: modelData.color
             border.width: tileMouse.containsMouse ? 1 : 0
             border.color: "#ffffff"
+            Text {
+              visible: modelData.calendar === true
+              anchors.horizontalCenter: parent.horizontalCenter
+              y: 16
+              text: Qt.formatDateTime(root.now, "ddd")
+              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 11
+            }
+            Text {
+              visible: modelData.calendar === true
+              anchors.horizontalCenter: parent.horizontalCenter
+              y: 32
+              text: Qt.formatDateTime(root.now, "d")
+              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 28; font.weight: Font.Light
+            }
+            Text {
+              visible: modelData.calendar === true
+              anchors.horizontalCenter: parent.horizontalCenter
+              y: 66
+              text: Qt.formatDateTime(root.now, "MMM")
+              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 10
+            }
             Image {
-              visible: !modelData.weather
+              visible: !modelData.weather && !modelData.calendar
               anchors.centerIn: parent
               anchors.verticalCenterOffset: -8
               width: 34; height: 34
@@ -436,10 +482,67 @@ PopupWindow {
               cursorShape: Qt.PointingHandCursor
               onClicked: {
                 if (modelData.weather) root.weatherOpen = true
+                else if (modelData.calendar) root.calendarOpen = true
                 else root.launchRequested(modelData.entry)
               }
             }
           }
+        }
+      }
+      Rectangle {
+        visible: root.calendarOpen
+        x: 16; y: 40
+        width: 300; height: 296
+        color: "#1f1f1f"
+        border.width: 1; border.color: "#4d4d4d"
+        Text {
+          x: 16; y: 12
+          text: Qt.formatDateTime(root.now, "MMMM yyyy")
+          color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 14; font.weight: Font.DemiBold
+        }
+        Row {
+          x: 16; y: 40; spacing: 0
+          Repeater {
+            model: ["S", "M", "T", "W", "T", "F", "S"]
+            delegate: Text {
+              required property string modelData
+              width: 36; height: 22
+              text: modelData
+              color: "#9a9a9a"; font.family: "Selawik"; font.pixelSize: 10
+              horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+            }
+          }
+        }
+        Grid {
+          x: 16; y: 64
+          columns: 7
+          Repeater {
+            model: root.calendarCells()
+            delegate: Text {
+              required property int index
+              required property var modelData
+              width: 36; height: 28
+              text: modelData > 0 ? String(modelData) : ""
+              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 11
+              horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+            }
+          }
+        }
+        Rectangle {
+          anchors.left: parent.left; anchors.leftMargin: 16; y: parent.height - 40
+          width: 80; height: 27
+          color: todayMouse.containsMouse ? "#3f3f3f" : "#2b2b2b"
+          border.width: 1; border.color: "#4d4d4d"
+          Text { anchors.centerIn: parent; text: "Today"; color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 11 }
+          MouseArea { id: todayMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.now = new Date() }
+        }
+        Rectangle {
+          anchors.right: parent.right; anchors.rightMargin: 16; y: parent.height - 40
+          width: 70; height: 27
+          color: closeCalMouse.containsMouse ? "#3f3f3f" : "#2b2b2b"
+          border.width: 1; border.color: "#4d4d4d"
+          Text { anchors.centerIn: parent; text: "Close"; color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 11 }
+          MouseArea { id: closeCalMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.calendarOpen = false }
         }
       }
       Rectangle {

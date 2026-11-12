@@ -23,10 +23,10 @@ default `#0078d7` accent.
 | Start palette | dark `#1f1f1f` by default | `#1f1f1f` with `#191919` rail | `start-recent-half.png` |
 | Start content | Recently added, All apps, tiles, rail, power | Recently added, All apps, tiles, rail, power | `start-recent-half.png` |
 | Titlebar | 30px Windows 10 bar, square caption buttons | 30px white bar, square transparent buttons, Selawik | `/tmp/opencode/final4-half.png` |
-| Settings | light page, `#f2f2f2` nav, `#0078d7` accent | same palette; 900×660 window with 32px title bar and Home/Accounts/Time/Privacy/Update pages | `/tmp/opencode/settings-home3.png`, `live-displays.png` |
+| Settings | light page, `#f2f2f2` nav, `#0078d7` accent | same palette; Home/Accounts/Time/Privacy/Update plus the existing pages | `/tmp/opencode/settings-home3.png`, `live-displays.png` |
 | Action center | dark flyout, notifications above quick actions | same structure; quick actions work and notifications are listed | `/tmp/opencode/action-notifs-half.png` |
 | Jump list | taskbar app context menu | right-click/`jump <id>` menu with Open, Pin/Unpin, Close all | `/tmp/opencode/jump-final-half.png` |
-| Live tile | Weather/Calendar tiles update | Weather tile refreshes every 15 minutes from `omarchy weather status` | `/tmp/opencode/start-weather4.png` |
+| Live tiles | Calendar and Weather update | Calendar shows the live date; Weather refreshes every 15 minutes from `omarchy weather status` | `/tmp/opencode/start-final2.png` |
 
 Live checks: `hyprctl getoption plugin:hyprbars:enabled` → true,
 `bar_height` → 30; the monitor is eDP-1 at 2160×1440, scale 2 (200%), 60 Hz.
@@ -35,10 +35,10 @@ Tests: `python3 -m unittest discover -s tests -v` → 20/20.
 ## Side-by-side comparisons
 
 - Desktop: `/tmp/opencode/compare-desktop3.png`
-- Start: `/tmp/opencode/compare-start3.png`
-- Settings: `/tmp/opencode/compare-settings3.png`
+- Start: `/tmp/opencode/compare-start4.png`
+- Settings: `/tmp/opencode/compare-settings4.png`
 - Action center: `/tmp/opencode/compare-action3.png`
-- Titlebar: `/tmp/opencode/compare-titlebar5.png`
+- Titlebar: `/tmp/opencode/compare-titlebar6.png`
 
 The reference captures use a user-selected accent color for Start/action
 center; Big Nut uses the Windows 10 default black/dark surfaces.

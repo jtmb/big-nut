@@ -297,6 +297,8 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn("weatherProc", start)
         self.assertIn('"weather", "status"', start)
         self.assertIn("weatherOpen", start)
+        self.assertIn("calendarCells", start)
+        self.assertIn("calendar: true", start)
         settings = (ROOT / "shared/brajam.windows-taskbar/WindowsSettings.qml").read_text()
         self.assertIn('id: "home"', settings)
         self.assertIn("Network & Internet", settings)

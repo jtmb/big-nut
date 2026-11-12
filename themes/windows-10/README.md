@@ -68,7 +68,7 @@ Settings scale and layout capture, and Microsoft's Windows app title bar design
 guidance.
 
 Remaining deviations: the action center embeds current/history notifications
-(up to three) and links to the full history; the Weather Start tile is live while
+(up to three) and links to the full history; the Calendar and Weather Start tiles are live while
 application-owned tiles remain static; taskbar jump lists provide open,
 pin/unpin and close-all but not application recent-file lists; Settings has
 Home, Accounts, Time & language, Privacy & security, Update & security,

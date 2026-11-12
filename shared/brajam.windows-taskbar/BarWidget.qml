@@ -459,6 +459,7 @@ BarWidget {
     function closesettings(): void { settingsView.close() }
     function closejump(): void { root.closeJump() }
     function weather(): void { root.openStart(); startView.weatherOpen = true }
+    function calendar(): void { root.openStart(); startView.calendarOpen = true }
     function jump(key: string): void {
       for (var i = 0; i < root.items.length; i++)
         if (root.items[i].key === key) {
