@@ -69,7 +69,7 @@ Live checks: `plugin:winbars:enabled` → true, `bar_height` → 30,
 ## Side-by-side comparisons
 
 - Taskbar/desktop: `/tmp/opencode/compare-taskbar-final5.png` (same black-taskbar layout; the reference uses a black wallpaper and the 1607 search placeholder)
-- Start (like-for-like dark, grouped wide/large tiles): `/tmp/opencode/compare-start-large.png`
+- Start (like-for-like dark, small/medium/wide/large tiles): `/tmp/opencode/compare-start-packed.png`
 - Settings: `/tmp/opencode/compare-settings-resolution.png`
 - Action center with the Windows store: `/tmp/opencode/compare-action-store.png`
 - Windows Security page: `/tmp/opencode/compare-security2.png`
@@ -113,7 +113,7 @@ bars are unaffected.
 
 | Surface | Difference from Windows 10 | Next pass |
 | --- | --- | --- |
-| Start | No small tiles or true 2-row tile packing; Calendar/Files use wide/large approximations; no live Mail/People/Photos feeds, tile drag or Cortana suggestions | Add small tiles and a span-aware grid; map more live feeds where data exists |
+| Start | Small/medium/wide/large tiles and span-aware packing are implemented; still no live Mail/People/Photos feeds, tile dragging or Cortana suggestions | Map more live feeds and add tile drag |
 | Settings | Window is 900×660 versus Windows' roughly 1024×768; no acrylic; advanced display controls (HDR, colour profile, refresh rate) absent; Sound/Printers open Omarchy/CUPS instead of embedded pages | Add an embedded sound/device picker and advanced display rows that map to real commands |
 | Action center | Cards are a flat list with no app grouping, per-app notification settings, expand/collapse animation or quick-action edit mode | Group by app and add a notification-settings link |
 | Taskbar | No Cortana, thumbnail previews, taskbar overflow menu or per-app jump-list frequent list; search placeholder is the 1903 wording | Add hover thumbnails and a proper overflow menu |

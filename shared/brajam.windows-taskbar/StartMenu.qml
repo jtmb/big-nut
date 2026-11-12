@@ -40,6 +40,10 @@ PopupWindow {
     return players.length > 0 ? players[0] : null
   }
   readonly property var tileGroups: root.buildTileGroups()
+  readonly property int tileCell: 48
+  readonly property int tileGap: 4
+  readonly property int tileColumns: 6
+  readonly property int tileGroupWidth: tileColumns * tileCell + (tileColumns - 1) * tileGap
   readonly property string initial: (Quickshell.env("USER") || "U").charAt(0).toUpperCase()
 
   Process {
@@ -123,21 +127,69 @@ PopupWindow {
     }
     return rows
   }
+  function tileSpan(id) {
+    switch (id) {
+    case "org.gnome.Nautilus": return [4, 4]
+    case "libreoffice-writer": return [4, 2]
+    case "foot": return [1, 1]
+    case "org.gnome.Papers": return [1, 1]
+    case "mpv": return [1, 1]
+    case "omacalc": return [1, 1]
+    default: return [2, 2]
+    }
+  }
   function buildTiles() {
     var ids = ["org.gnome.Nautilus", "chromium", "foot", "libreoffice-writer",
                "org.gnome.Papers", "mpv", "omawrite", "omacalc"]
-    var out = [{ calendar: true, wide: true, name: "Calendar", color: "#0078d7" },
-               { weather: true, name: "Weather", color: "#0078d7" }]
-    if (root.mediaPlayer) out.push({ media: true, wide: true, name: "Now playing", color: "#107c10" })
+    var out = [{ calendar: true, spanW: 4, spanH: 2, name: "Calendar", color: "#0078d7" },
+               { weather: true, spanW: 2, spanH: 2, name: "Weather", color: "#0078d7" }]
+    if (root.mediaPlayer) out.push({ media: true, spanW: 1, spanH: 1, small: true, name: "Now playing", color: "#107c10" })
     for (var i = 0; i < ids.length; i++) {
       var entry = DesktopEntries.byId(ids[i])
       if (!entry || entry.noDisplay) continue
-      out.push({ entry: entry, name: entry.name,
-                 wide: entry.id === "libreoffice-writer",
-                 large: entry.id === "org.gnome.Nautilus",
+      var span = root.tileSpan(entry.id)
+      out.push({ entry: entry, name: entry.name, spanW: span[0], spanH: span[1],
+                 small: span[0] === 1 && span[1] === 1,
                  color: root.tileColor(entry.id) })
     }
     return out
+  }
+  function packTiles(tiles) {
+    var occupied = []
+    var rows = 0
+    function fits(col, row, width, height) {
+      for (var y = row; y < row + height; y++)
+        for (var x = col; x < col + width; x++)
+          if (occupied[y] && occupied[y][x]) return false
+      return true
+    }
+    function reserve(col, row, width, height) {
+      for (var y = row; y < row + height; y++) {
+        if (!occupied[y]) occupied[y] = []
+        for (var x = col; x < col + width; x++) occupied[y][x] = true
+      }
+      rows = Math.max(rows, row + height)
+    }
+    var ordered = tiles.slice().sort(function(a, b) {
+      return (b.spanW * b.spanH) - (a.spanW * a.spanH)
+    })
+    for (var i = 0; i < ordered.length; i++) {
+      var tile = ordered[i]
+      var width = Math.min(root.tileColumns, tile.spanW || 2)
+      var height = tile.spanH || 2
+      var placed = false
+      for (var row = 0; !placed && row < 40; row++) {
+        for (var col = 0; col <= root.tileColumns - width; col++) {
+          if (fits(col, row, width, height)) {
+            tile.col = col; tile.row = row; tile.spanW = width; tile.spanH = height
+            reserve(col, row, width, height)
+            placed = true
+            break
+          }
+        }
+      }
+    }
+    return { tiles: ordered, rows: Math.max(1, rows) }
   }
   function buildTileGroups() {
     var all = root.buildTiles()
@@ -146,13 +198,17 @@ PopupWindow {
       var tile = all[i]
       var id = tile.entry ? String(tile.entry.id) : ""
       if (tile.calendar || tile.weather) life.push(tile)
-      else if (id === "libreoffice-writer" || id === "omawrite") productivity.push(tile)
+      else if (id === "libreoffice-writer" || id === "omawrite" || id === "omacalc") productivity.push(tile)
       else explore.push(tile)
     }
+    function group(title, tiles) {
+      var packed = root.packTiles(tiles)
+      return { title: title, tiles: packed.tiles, rows: packed.rows }
+    }
     var groups = []
-    if (life.length) groups.push({ title: "Life at a glance", tiles: life })
-    if (productivity.length) groups.push({ title: "Productivity", tiles: productivity })
-    if (explore.length) groups.push({ title: "Explore", tiles: explore })
+    if (life.length) groups.push(group("Life at a glance", life))
+    if (productivity.length) groups.push(group("Productivity", productivity))
+    if (explore.length) groups.push(group("Explore", explore))
     return groups
   }
   function tileColor(id) {
@@ -453,15 +509,17 @@ PopupWindow {
               text: modelData.title
               color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12; font.weight: Font.DemiBold
             }
-            Flow {
-              width: 308
-              spacing: 4
+            Item {
+              width: root.tileGroupWidth
+              height: modelData.rows * root.tileCell + (modelData.rows - 1) * root.tileGap
               Repeater {
                 model: modelData.tiles
                 delegate: Rectangle {
                   required property var modelData
-                  width: modelData.wide === true || modelData.large === true ? 204 : 100
-                  height: modelData.large === true ? 204 : 100
+                  x: modelData.col * (root.tileCell + root.tileGap)
+                  y: modelData.row * (root.tileCell + root.tileGap)
+                  width: modelData.spanW * root.tileCell + (modelData.spanW - 1) * root.tileGap
+                  height: modelData.spanH * root.tileCell + (modelData.spanH - 1) * root.tileGap
                   color: modelData.color
                   border.width: tileMouse.containsMouse ? 1 : 0
                   border.color: "#ffffff"
@@ -469,7 +527,8 @@ PopupWindow {
                     visible: modelData.media === true && root.mediaPlayer && String(root.mediaPlayer.trackArtUrl || "").length > 0
                     anchors.centerIn: parent
                     anchors.verticalCenterOffset: -14
-                    width: 38; height: 38
+                    width: modelData.small === true ? 24 : 38
+                    height: modelData.small === true ? 24 : 38
                     source: root.mediaPlayer ? String(root.mediaPlayer.trackArtUrl || "") : ""
                     fillMode: Image.PreserveAspectCrop
                   }
@@ -478,17 +537,17 @@ PopupWindow {
                     anchors.centerIn: parent
                     anchors.verticalCenterOffset: -12
                     text: "\uf001"
-                    color: "#ffffff"; font.family: "Font Awesome 7 Free Solid"; font.pixelSize: 28
+                    color: "#ffffff"; font.family: "Font Awesome 7 Free Solid"; font.pixelSize: modelData.small === true ? 20 : 28
                   }
                   Text {
-                    visible: modelData.media === true
+                    visible: modelData.media === true && modelData.small !== true
                     x: 7; y: 58; width: parent.width - 14
                     text: root.mediaPlayer ? (root.mediaPlayer.trackTitle || "Media") : "Media"
                     color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 10
                     elide: Text.ElideRight
                   }
                   Text {
-                    visible: modelData.media === true
+                    visible: modelData.media === true && modelData.small !== true
                     x: 7; y: 70; width: parent.width - 14
                     text: root.mediaPlayer ? (root.mediaPlayer.trackArtist || "") : ""
                     color: "#d8f0d8"; font.family: "Selawik"; font.pixelSize: 9
@@ -519,7 +578,8 @@ PopupWindow {
                     visible: !modelData.weather && !modelData.calendar && !modelData.media
                     anchors.centerIn: parent
                     anchors.verticalCenterOffset: -8
-                    width: 34; height: 34
+                    width: modelData.small === true ? 24 : 34
+                    height: modelData.small === true ? 24 : 34
                     source: modelData.entry ? Quickshell.iconPath(modelData.entry.icon, true) : ""
                     fillMode: Image.PreserveAspectFit
                   }
@@ -541,7 +601,7 @@ PopupWindow {
                     elide: Text.ElideRight
                   }
                   Text {
-                    visible: modelData.media !== true
+                    visible: modelData.media !== true && modelData.small !== true
                     x: 7; y: parent.height - 22
                     width: parent.width - 14
                     text: modelData.name

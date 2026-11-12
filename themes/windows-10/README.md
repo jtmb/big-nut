@@ -17,8 +17,8 @@ metric-compatible Segoe UI substitute.
   Show desktop strip on the right), plus Omarchy's tray, network, volume and
   battery widgets.
 - Start menu: dark Windows 10 rail, all-apps list, grouped live tiles
-  (Life at a glance, Productivity, Explore) with Windows-style wide and large
-  tiles, power menu.
+  (Life at a glance, Productivity, Explore) with Windows-style small, medium,
+  wide and large tiles in a span-aware packer, power menu.
 - Colors: white app surfaces, black window text, `#0078d7` accent, square
   corners, opaque windows and a 1px accent border.
 - Wallpaper: `backgrounds/1-windows-10-blue.webp`, an original render of
