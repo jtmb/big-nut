@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "brajam.windows-lock",
+  "name": "Windows Lock Screen",
+  "version": "1.0.0",
+  "author": "Local",
+  "description": "Windows 10-style session lock with clock, avatar and power controls",
+  "kinds": [
+    "service"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml"
+  }
+}

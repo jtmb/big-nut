@@ -33,10 +33,11 @@ metric-compatible Segoe UI substitute.
   builds it against the installed Hyprland headers into
   `~/.local/share/windows-10-titlebars/titlebars.so`, loads it as `winbars`,
   and disables the stock `hyprbars` plugin against double decorations.
-- Lock/toasts: `shell.lock.toml` gives the lock field Windows colours;
-  `shell.notifications.toml` keeps dark square toast cards. Omarchy's lock QML
-  and OSD still own their layout, so the Windows clock/avatar and dark OSD are
-  not reproduced.
+- Lock/toasts: `shared/brajam.windows-lock` is a Windows lock service with
+  clock/date, avatar, password field and power controls; `shell.lock.toml`
+  supplies its Windows colours. `shell.notifications.toml` keeps dark square
+  toast cards. The OSD still uses Omarchy's first-party overlay and its global
+  background token, so it remains light.
 - GTK: `GTK_CSD=0` is set through Hyprland and
   `~/.config/environment.d/90-windows-10.conf`. `gtk/` contains GTK3/GTK4 CSS
   and a settings file that make header bars white, square and Windows-ordered
@@ -58,6 +59,9 @@ ln -s "$PWD/shared/brajam.windows-clock" ~/.config/omarchy/plugins/brajam.window
 omarchy theme set windows-10
 omarchy restart shell
 ```
+
+Restart the shell after applying or leaving this theme: Omarchy keeps lock
+services loaded, and the Windows lock service replaces `omarchy.lock`.
 
 Switching to another theme restores the previous bar, plugin and wallpaper
 settings. The `windowsTaskbar.pinned` list in `shell.json` holds the taskbar

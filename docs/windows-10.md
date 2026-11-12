@@ -79,7 +79,7 @@ Live checks: `plugin:winbars:enabled` → true, `bar_height` → 30,
 - Titlebar on a GTK SSD app + close hover: `/tmp/opencode/compare-titlebar-gtk.png`
 - Titlebar default-white reference: `/tmp/opencode/compare-titlebar-default.png`
 - Desktop/Hero wallpaper: `/tmp/opencode/compare-desktop-hero.png`
-- Lock screen: `/tmp/opencode/compare-lock.png`
+- Lock screen: `/tmp/opencode/compare-lock2.png`
 - Notification toast: `/tmp/opencode/compare-toast.png`
 
 The taskbar, Start and action-center comparisons use dark Windows mode references with black surfaces, matching Big Nut's defaults. The wallpaper in the full desktop capture is an original drawing, so the taskbar strip comparison is the like-for-like surface comparison. The titlebar comparison uses a Windows 10 About dialog with a default white titlebar; it has one close button because dialogs do not show minimize/maximize. The accent-colored Settings capture documents the reference's custom accent, not Big Nut's palette.
@@ -113,11 +113,13 @@ bars are unaffected.
 
 ## Lock screen, toasts and OSD
 
-- `shell.lock.toml` gives the lock field Windows colours: white field, black
-  text, blue focus outline and red failure state. The hero wallpaper is used
-  behind it with Omarchy's blur. The first-party lock QML still draws a
-  centred field only; the Windows clock/date, avatar, account list and power
-  controls cannot be added without replacing the session-lock plugin.
+- `shared/brajam.windows-lock` is a copied session-lock service (the original
+  Omarchy PAM/fingerprint mechanics) with a Windows layout: large clock and
+  date lower-left, avatar and user name above the white password field, and
+  sleep/restart/shutdown controls lower-right. `shell.lock.toml` supplies the
+  Windows field colours. The first-party `omarchy.lock` is disabled while the
+  Windows theme is active; a shell restart is required after switching lock
+  services because Omarchy keeps the lock service loaded.
 - `shell.notifications.toml` keeps toast cards dark (`#1f1f1f`), square,
   white text with a blue countdown accent. Omarchy positions toasts at the
   top-right and does not draw a separate app-name header; Windows shows them
@@ -138,7 +140,7 @@ Evidence `/tmp/opencode/compare-lock.png` and
 | Settings | Window is 900×660 versus Windows' roughly 1024×768; no acrylic; advanced display controls (HDR, colour profile, refresh rate) absent; Sound/Printers open Omarchy/CUPS instead of embedded pages | Add an embedded sound/device picker and advanced display rows that map to real commands |
 | Action center | Cards are a flat list with no app grouping, per-app notification settings, expand/collapse animation or quick-action edit mode | Group by app and add a notification-settings link |
 | Taskbar | No Cortana, thumbnail previews, taskbar overflow menu or per-app jump-list frequent list; search placeholder is the 1903 wording | Add hover thumbnails and a proper overflow menu |
-| Lock screen | Windows colours and hero background are applied, but the first-party lock QML lacks the Windows clock/date, avatar, account list and power controls | Replace the lock plugin for a full Windows layout |
+| Lock screen | Custom Windows lock service now has clock/date, avatar, password field and power controls; the bottom-left account switcher, network/battery status and accessibility button are still missing | Add an account list and status icons |
 | Toasts/OSD | Toasts are dark/square with Windows colours but sit top-right and lack the app-name header; the OSD remains light because it uses the global shell background | Replace the OSD plugin or add themeable OSD tokens |
 
 ## Intentional deviations

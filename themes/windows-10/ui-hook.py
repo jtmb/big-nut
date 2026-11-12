@@ -36,6 +36,8 @@ GTK_SETTINGS = (
 )
 KEYS = ("bar", "dock", "plugins", "disabledPlugins", "cloneSourceRestores")
 PINNED = ["org.gnome.Nautilus", "chromium", "foot", "libreoffice-writer"]
+LOCK_SOURCE = THEME_DIR.parent.parent / "shared/brajam.windows-lock"
+LOCK_TARGET = Path.home() / ".config/omarchy/plugins/brajam.windows-lock"
 
 
 def save(path, data):
@@ -132,6 +134,19 @@ def remove_gtk_style():
                 subprocess.run(["gsettings", "set", schema, key, value], check=False,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     GTK_STATE.unlink()
+
+
+def install_lock_plugin():
+    """Install the Windows lock service without touching a real plugin dir."""
+    if not (LOCK_SOURCE / "manifest.json").is_file():
+        return
+    LOCK_TARGET.parent.mkdir(parents=True, exist_ok=True)
+    if LOCK_TARGET.is_symlink():
+        if LOCK_TARGET.resolve() == LOCK_SOURCE.resolve():
+            return
+        LOCK_TARGET.unlink()
+    if not LOCK_TARGET.exists():
+        LOCK_TARGET.symlink_to(LOCK_SOURCE)
 
 
 def install_title_shim():
@@ -247,6 +262,7 @@ def install_titlebars():
 def apply(config):
     before = snapshot(config)
     install_fonts()
+    install_lock_plugin()
     install_gtk_style()
     install_title_shim()
     install_gtk_environment()
@@ -269,12 +285,13 @@ def apply(config):
     }
 
     plugins = copy.deepcopy(config.get("plugins", []))
-    for plugin_id in ("brajam.windows-taskbar", "brajam.windows-clock", "brajam.windows-tray"):
+    for plugin_id in ("brajam.windows-taskbar", "brajam.windows-clock", "brajam.windows-tray",
+                      "brajam.windows-lock"):
         if not any(isinstance(item, dict) and item.get("id") == plugin_id for item in plugins):
             plugins.append({"id": plugin_id})
     disabled = copy.deepcopy(config.get("disabledPlugins", []))
     for plugin_id in ("brajam.dock", "omarchy.dock", "brajam.golden-gate-menu",
-                      "brajam.golden-gate-widgets"):
+                      "brajam.golden-gate-widgets", "omarchy.lock"):
         if plugin_id not in disabled:
             disabled.append(plugin_id)
 
@@ -333,6 +350,7 @@ def main():
     if slug == THEME:
         if STATE.is_file():
             install_fonts()
+            install_lock_plugin()
             install_gtk_style()
             install_title_shim()
             install_gtk_environment()
