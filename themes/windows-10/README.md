@@ -68,8 +68,8 @@ Settings scale and layout capture, and Microsoft's Windows app title bar design
 guidance.
 
 Remaining deviations: the action center embeds up to six current/history
-notifications and links to the full history; the Calendar and Weather Start
-tiles are live while application-owned tiles remain static; taskbar jump lists
+notifications and links to the full history; the Calendar, Weather and MPRIS Now Playing Start
+tiles are live while other application-owned tiles remain static; taskbar jump lists
 provide open, pin/unpin, close-all and recent XDG documents; Settings has
 Home, Accounts, Time & language, Privacy & security, Update & security,
 Personalization, Taskbar, Display, Background and Multitasking pages; caption

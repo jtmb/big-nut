@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
+import Quickshell.Services.Mpris
 import qs.Commons
 
 // Windows 10 Start: rail, all-apps list, live-tile area and power menu.
@@ -31,6 +32,12 @@ PopupWindow {
     for (var i = 0; i < root.appRows.length && result.length < 3; i++)
       if (root.appRows[i].type === "app") result.push(root.appRows[i])
     return result
+  }
+  readonly property var mediaPlayer: {
+    var players = Mpris.players ? Mpris.players.values : []
+    for (var i = 0; i < players.length; i++)
+      if (players[i] && (players[i].trackTitle || players[i].isPlaying)) return players[i]
+    return players.length > 0 ? players[0] : null
   }
   readonly property var tileApps: root.buildTiles()
   readonly property string initial: (Quickshell.env("USER") || "U").charAt(0).toUpperCase()
@@ -121,6 +128,7 @@ PopupWindow {
                "org.gnome.Papers", "mpv", "omawrite", "omacalc"]
     var out = [{ calendar: true, name: "Calendar", color: "#0078d7" },
                { weather: true, name: "Weather", color: "#0078d7" }]
+    if (root.mediaPlayer) out.push({ media: true, name: "Now playing", color: "#107c10" })
     for (var i = 0; i < ids.length; i++) {
       var entry = DesktopEntries.byId(ids[i])
       if (!entry || entry.noDisplay) continue
@@ -333,6 +341,7 @@ PopupWindow {
                 onClicked: {
                 if (modelData.weather) root.weatherOpen = true
                 else if (modelData.calendar) root.calendarOpen = true
+                else if (modelData.media && root.mediaPlayer) root.mediaPlayer.togglePlaying()
                 else root.launchRequested(modelData.entry)
               }
               }
@@ -387,6 +396,7 @@ PopupWindow {
                 onClicked: {
                 if (modelData.weather) root.weatherOpen = true
                 else if (modelData.calendar) root.calendarOpen = true
+                else if (modelData.media && root.mediaPlayer) root.mediaPlayer.togglePlaying()
                 else root.launchRequested(modelData.entry)
               }
               }
@@ -421,6 +431,35 @@ PopupWindow {
             color: modelData.color
             border.width: tileMouse.containsMouse ? 1 : 0
             border.color: "#ffffff"
+            Image {
+              visible: modelData.media === true && root.mediaPlayer && String(root.mediaPlayer.trackArtUrl || "").length > 0
+              anchors.centerIn: parent
+              anchors.verticalCenterOffset: -14
+              width: 38; height: 38
+              source: root.mediaPlayer ? String(root.mediaPlayer.trackArtUrl || "") : ""
+              fillMode: Image.PreserveAspectCrop
+            }
+            Text {
+              visible: modelData.media === true && !(root.mediaPlayer && String(root.mediaPlayer.trackArtUrl || "").length > 0)
+              anchors.centerIn: parent
+              anchors.verticalCenterOffset: -12
+              text: "\uf001"
+              color: "#ffffff"; font.family: "Font Awesome 7 Free Solid"; font.pixelSize: 28
+            }
+            Text {
+              visible: modelData.media === true
+              x: 7; y: 58; width: parent.width - 14
+              text: root.mediaPlayer ? (root.mediaPlayer.trackTitle || "Media") : "Media"
+              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 10
+              elide: Text.ElideRight
+            }
+            Text {
+              visible: modelData.media === true
+              x: 7; y: 70; width: parent.width - 14
+              text: root.mediaPlayer ? (root.mediaPlayer.trackArtist || "") : ""
+              color: "#d8f0d8"; font.family: "Selawik"; font.pixelSize: 9
+              elide: Text.ElideRight
+            }
             Text {
               visible: modelData.calendar === true
               anchors.horizontalCenter: parent.horizontalCenter
@@ -443,11 +482,11 @@ PopupWindow {
               color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 10
             }
             Image {
-              visible: !modelData.weather && !modelData.calendar
+              visible: !modelData.weather && !modelData.calendar && !modelData.media
               anchors.centerIn: parent
               anchors.verticalCenterOffset: -8
               width: 34; height: 34
-              source: modelData.weather ? "" : Quickshell.iconPath(modelData.entry.icon, true)
+              source: modelData.entry ? Quickshell.iconPath(modelData.entry.icon, true) : ""
               fillMode: Image.PreserveAspectFit
             }
             Text {
@@ -468,6 +507,7 @@ PopupWindow {
               elide: Text.ElideRight
             }
             Text {
+              visible: modelData.media !== true
               x: 7; y: parent.height - 22
               width: parent.width - 14
               text: modelData.name
@@ -483,6 +523,7 @@ PopupWindow {
               onClicked: {
                 if (modelData.weather) root.weatherOpen = true
                 else if (modelData.calendar) root.calendarOpen = true
+                else if (modelData.media && root.mediaPlayer) root.mediaPlayer.togglePlaying()
                 else root.launchRequested(modelData.entry)
               }
             }
