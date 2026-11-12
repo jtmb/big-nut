@@ -41,14 +41,14 @@ Live checks: `plugin:winbars:enabled` → true, `bar_height` → 30,
 
 ## Side-by-side comparisons
 
-- Desktop: `/tmp/opencode/compare-desktop4.png`
+- Taskbar/desktop: `/tmp/opencode/compare-taskbar-final.png` (same black-taskbar layout; the reference uses a black wallpaper and the 1607 search placeholder)
 - Start (like-for-like dark): `/tmp/opencode/compare-start6.png`
 - Settings: `/tmp/opencode/compare-settings4.png`
 - Action center (like-for-like dark): `/tmp/opencode/compare-action-dark3.png`
 - Titlebar (default white, like-for-like): `/tmp/opencode/compare-titlebar-default.png`
 - Titlebar close hover: `/tmp/opencode/compare-titlebar-hover.png`
 
-The Start and action-center comparisons use dark Windows mode references with black surfaces, matching Big Nut's defaults. The titlebar comparison uses a Windows 10 About dialog with a default white titlebar; it has one close button because dialogs do not show minimize/maximize. The accent-colored Settings capture documents the reference's custom accent, not Big Nut's palette.
+The taskbar, Start and action-center comparisons use dark Windows mode references with black surfaces, matching Big Nut's defaults. The wallpaper in the full desktop capture is an original drawing, so the taskbar strip comparison is the like-for-like surface comparison. The titlebar comparison uses a Windows 10 About dialog with a default white titlebar; it has one close button because dialogs do not show minimize/maximize. The accent-colored Settings capture documents the reference's custom accent, not Big Nut's palette.
 
 ## Intentional deviations
 
