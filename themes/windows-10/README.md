@@ -64,8 +64,9 @@ pins; edit it or use the START menu's pinned app list as a starting point.
 - Task View: show open windows as clickable cards.
 - App button: launch, focus, or minimize the app's windows; a blue underline
   marks the active app.
-- Action center: dark flyout with notification cards (real app icon or sender
-  glyph, summary, time, click-to-invoke, dismiss and Clear all) above a 4-column quick-action grid
+- Action center: dark flyout with notification cards from a Windows-shaped
+  store (`notification-store.py`; real app icon or sender glyph, title, time,
+  click-to-invoke, dismiss and Clear all) above a 4-column quick-action grid
   (All settings, Network, Night light, Focus assist, Wi-Fi, Bluetooth,
   Screen snip). Dismissed keys persist across shell restarts.
 - Show desktop: minimize everything on the workspace, or restore what the

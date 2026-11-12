@@ -71,7 +71,8 @@ Live checks: `plugin:winbars:enabled` → true, `bar_height` → 30,
 - Taskbar/desktop: `/tmp/opencode/compare-taskbar-final5.png` (same black-taskbar layout; the reference uses a black wallpaper and the 1607 search placeholder)
 - Start (like-for-like dark, grouped wide/large tiles): `/tmp/opencode/compare-start-large.png`
 - Settings: `/tmp/opencode/compare-settings-resolution.png`
-- Action center (like-for-like dark, real icons and clickable cards): `/tmp/opencode/compare-action-icons.png`
+- Action center with the Windows store: `/tmp/opencode/compare-action-store.png`
+- Windows Security page: `/tmp/opencode/compare-security2.png`
 - GTK app styling: `/tmp/opencode/compare-gtk-style2.png`
 - Left-aligned GTK/libadwaita titles: `/tmp/opencode/compare-title-left.png`
 - Title alignment attempts: `/tmp/opencode/compare-title-alignment.png`
@@ -109,9 +110,12 @@ bars are unaffected.
 
 ## Intentional deviations
 
-- The action center shows up to six live/history entries as cards with a real
-  app icon (icon theme, desktop entry or the sender's glyph), time,
-  click-to-invoke, per-card dismiss and Clear all. Clicking a card
+- The action center reads `~/.local/state/omarchy/windows-10-notifications.json`,
+  a Windows-shaped store maintained by `themes/windows-10/notification-store.py`.
+  Each entry has `id`, `app`, `title`, `body`, `icon`, `glyph`, `timestamp`,
+  `read`, `dismissed`, `execArgv`, `link` and source fields. Omarchy remains the
+  transport, but the action center no longer reads its history file directly;
+  dismiss and Clear all update the Windows store and persist a dismissed list. Clicking a card
   runs its `execArgv` command or opens its link; entries without either open
   the notification history. Dismissed keys persist in
   `~/.local/state/omarchy/windows-10-dismissed.json`, so cleared history cards
@@ -122,6 +126,11 @@ bars are unaffected.
   static because their feeds are application-owned. Jump lists include recent
   XDG documents. The live store was populated by opening a real document in
   LibreOffice Writer and verified through the jump-list Recent row.
+- **Windows Security** is a working page under Update & security. It reports
+  real Linux state: firewall (ufw/firewalld), Secure Boot and TPM, encrypted
+  volumes, ClamAV and snapper configurations, laid out as the Windows
+  "Protection areas" list. Windows Defender and Windows Update services do not
+  exist on this system and are called out on the page.
 - Settings provides the Windows 10 sidebar order and drop-down scale,
   text-size, resolution and orientation controls: Home, System, Devices, Network & Internet, Personalization,
   Accounts, Time & language, Privacy & security, Update & security. System links to Display, Sound,

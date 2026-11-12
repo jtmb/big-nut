@@ -17,11 +17,7 @@ BarWidget {
   property bool nightlightOn: false
   property bool dndOn: false
   property int notificationCount: 0
-  property var liveNotifications: []
-  property var historyNotifications: []
   property var notifications: []
-  property var dismissedKeys: ({})
-  property bool dismissedPending: false
 
   readonly property string timeText: Qt.formatDateTime(now, "h:mm AP")
   readonly property string dateText: Qt.formatDateTime(now, "M/d/yyyy")
@@ -63,82 +59,34 @@ BarWidget {
     }
   }
   Process {
-    id: dismissedReader
-    command: ["python3", Quickshell.env("HOME") + "/.config/omarchy/themes/windows-10/notification-dismissed.py", "list"]
-    stdout: StdioCollector {
-      onStreamFinished: {
-        try {
-          var rows = JSON.parse(text)
-          var map = ({})
-          for (var i = 0; i < rows.length; i++) map[String(rows[i])] = true
-          root.dismissedKeys = map
-          root.mergeNotifications()
-        } catch (e) {}
-      }
-    }
+    id: storeSync
+    command: ["python3", Quickshell.env("HOME") + "/.config/omarchy/themes/windows-10/notification-store.py", "sync"]
+    onExited: storeView.reload()
   }
   Process {
-    id: dismissedWriter
-    command: ["python3", Quickshell.env("HOME") + "/.config/omarchy/themes/windows-10/notification-dismissed.py", "add"]
+    id: storeAction
     onExited: {
-      if (root.dismissedPending) {
-        root.dismissedPending = false
-        root.persistDismissed()
-      } else if (!dismissedReader.running) {
-        dismissedReader.running = true
-      }
+      if (storeView.path !== "") storeView.reload()
+      if (!storeSync.running) storeSync.running = true
     }
   }
-  Component.onCompleted: if (!dismissedReader.running) dismissedReader.running = true
-  Process {
-    id: countReader
-    command: ["omarchy-shell", "notifications", "count"]
-    stdout: StdioCollector { onStreamFinished: root.notificationCount = parseInt(text.trim()) || 0 }
-  }
   FileView {
-    id: liveView
-    path: Quickshell.env("HOME") + "/.local/state/omarchy/notifications/live.json"
+    id: storeView
+    path: Quickshell.env("HOME") + "/.local/state/omarchy/windows-10-notifications.json"
     watchChanges: true
     printErrors: false
     onLoaded: {
       try {
-        var list = JSON.parse(text())
-        root.liveNotifications = Array.isArray(list) ? list : []
+        var data = JSON.parse(text())
+        root.notifications = Array.isArray(data.notifications) ? data.notifications : []
       } catch (e) {
-        root.liveNotifications = []
+        root.notifications = []
       }
-      root.mergeNotifications()
     }
     onFileChanged: reload()
   }
-  FileView {
-    id: historyView
-    path: Quickshell.env("HOME") + "/.local/state/omarchy/notifications/history.json"
-    watchChanges: true
-    printErrors: false
-    onLoaded: {
-      try {
-        var list = JSON.parse(text())
-        root.historyNotifications = Array.isArray(list) ? list : []
-      } catch (e) {
-        root.historyNotifications = []
-      }
-      root.mergeNotifications()
-    }
-    onFileChanged: reload()
-  }
-  function mergeNotifications() {
-    var merged = []
-    var seen = ({})
-    var sources = root.liveNotifications.concat(root.historyNotifications)
-    for (var i = 0; i < sources.length && merged.length < 6; i++) {
-      var row = sources[i]
-      if (!row || (row.key && (seen[row.key] || root.dismissedKeys[row.key]))) continue
-      if (row.key) seen[row.key] = true
-      merged.push(row)
-    }
-    root.notifications = merged
-  }
+  Component.onCompleted: if (!storeSync.running) storeSync.running = true
+  Timer { id: storeRefresh; interval: 5000; repeat: true; running: root.actionOpen; onTriggered: if (!storeSync.running) storeSync.running = true }
   Timer { id: actionRefresh; interval: 900; onTriggered: root.refresh() }
 
   function refresh() {
@@ -150,8 +98,8 @@ BarWidget {
   }
   function openActionCenter() {
     root.actionOpen = true
-    if (historyView.path !== "") historyView.reload()
-    if (liveView.path !== "") liveView.reload()
+    if (storeView.path !== "") storeView.reload()
+    if (!storeSync.running) storeSync.running = true
     root.refresh()
   }
   function closeActionCenter() { root.actionOpen = false }
@@ -163,19 +111,19 @@ BarWidget {
     root.bar.run(command)
     actionRefresh.restart()
   }
-  function persistDismissed() {
-    var keys = []
-    for (var key in root.dismissedKeys) keys.push(key)
-    if (dismissedWriter.running) { root.dismissedPending = true; return }
-    dismissedWriter.command = ["python3", Quickshell.env("HOME") + "/.config/omarchy/themes/windows-10/notification-dismissed.py", "add"].concat(keys)
-    dismissedWriter.running = true
+  function storeCommand(command, value) {
+    if (storeAction.running) return
+    var argv = ["python3", Quickshell.env("HOME") + "/.config/omarchy/themes/windows-10/notification-store.py", command]
+    if (value !== undefined) argv.push(String(value))
+    storeAction.command = argv
+    storeAction.running = true
   }
   function slug(text) {
     return String(text || "").toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^[-.]+|[-.]+$/g, "")
   }
   function notificationIcon(row) {
     if (!row) return ""
-    var icon = String(row.appIcon || "")
+    var icon = String(row.icon || row.appIcon || "")
     var source = String(row.source || "")
     var app = String(row.app || "")
     var names = [icon, source, app, root.slug(icon), root.slug(source), root.slug(app)]
@@ -199,11 +147,9 @@ BarWidget {
   }
   function dismissNotification(notification) {
     if (!notification) return
-    if (notification.key) root.dismissedKeys[notification.key] = true
-    var summary = notification.summary ? String(notification.summary) : ""
-    if (summary) root.bar.run("omarchy-shell notifications dismiss " + Util.shellQuote(summary))
-    root.mergeNotifications()
-    root.persistDismissed()
+    if (notification.id) root.storeCommand("dismiss", notification.id)
+    var title = notification.title ? String(notification.title) : ""
+    if (title) root.bar.run("omarchy-shell notifications dismiss " + Util.shellQuote(title))
     actionRefresh.restart()
   }
   function activateNotification(notification) {
@@ -216,11 +162,9 @@ BarWidget {
     }
     root.closeActionCenter()
     if (argv && argv.length) {
-      if (notification.key) root.dismissedKeys[notification.key] = true
-      var summary = notification.summary ? String(notification.summary) : ""
-      if (summary) root.bar.run("omarchy-shell notifications dismiss " + Util.shellQuote(summary))
-      root.mergeNotifications()
-      root.persistDismissed()
+      if (notification.id) root.storeCommand("dismiss", notification.id)
+      var title = notification.title ? String(notification.title) : ""
+      if (title) root.bar.run("omarchy-shell notifications dismiss " + Util.shellQuote(title))
       Util.execArgv(argv)
       actionRefresh.restart()
       return
@@ -232,13 +176,9 @@ BarWidget {
     root.bar.run("omarchy-shell notifications showHistory")
   }
   function clearNotifications() {
-    for (var i = 0; i < root.notifications.length; i++) {
-      var key = root.notifications[i].key
-      if (key) root.dismissedKeys[key] = true
-    }
     root.notifications = []
+    root.storeCommand("clear")
     root.bar.run("omarchy-shell notifications dismissAll")
-    root.persistDismissed()
     actionRefresh.restart()
   }
 
@@ -415,7 +355,7 @@ BarWidget {
                 x: 46; y: 8; width: parent.width - 96
                 Text {
                   width: parent.width
-                  text: modelData.summary || modelData.app || "Notification"
+                  text: modelData.title || modelData.app || "Notification"
                   color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12
                   elide: Text.ElideRight
                 }
@@ -428,7 +368,7 @@ BarWidget {
               }
               Text {
                 anchors.right: parent.right; anchors.rightMargin: 24; y: 8
-                text: Qt.formatDateTime(new Date((modelData.ts || 0) * 1000), "h:mm AP")
+                text: Qt.formatDateTime(new Date((modelData.timestamp || 0) * 1000), "h:mm AP")
                 color: "#8a8a8a"; font.family: "Selawik"; font.pixelSize: 10
               }
               Text {
@@ -459,7 +399,7 @@ BarWidget {
         visible: root.notifications.length === 0
         x: 16; y: 38
         width: parent.width - 32
-        text: root.notificationCount > 0 ? root.notificationCount + " new notification" + (root.notificationCount === 1 ? "" : "s") : "No new notifications"
+        text: "No new notifications"
         color: "#b8b8b8"; font.family: "Selawik"; font.pixelSize: 12
       }
       Text {

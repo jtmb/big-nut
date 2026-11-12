@@ -25,6 +25,7 @@ Item {
   property bool wifiOn: false
   property bool bluetoothOn: false
   property bool cupsOn: false
+  property var securityState: ({})
   readonly property var dock: config.dock || ({})
   readonly property var focusedDisplay: {
     var list = displayState.monitors || []
@@ -96,6 +97,7 @@ Item {
     : page === "time" ? "Time & language"
     : page === "privacy" ? "Privacy & security"
     : page === "update" ? "Update & security"
+    : page === "security" ? "Windows Security"
     : page === "dock" ? "Taskbar"
     : page === "displays" ? "Display"
     : page === "desktop" ? "Multitasking"
@@ -141,6 +143,16 @@ Item {
     stdout: StdioCollector { onStreamFinished: root.bluetoothOn = text.trim() === "on" }
   }
   Process {
+    id: securityReader
+    command: ["bash", Quickshell.env("HOME") + "/.config/omarchy/themes/windows-10/security-state.sh"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        try { root.securityState = JSON.parse(text) }
+        catch (e) { root.securityState = ({}) }
+      }
+    }
+  }
+  Process {
     id: cupsReader
     command: ["bash", "-c", "systemctl is-active cups 2>/dev/null || true"]
     stdout: StdioCollector { onStreamFinished: root.cupsOn = text.trim() === "active" }
@@ -171,12 +183,14 @@ Item {
     if (root.page !== section) { root.previousPage = root.page; root.page = section; content.contentY = 0 }
     if (section === "displays") root.refreshDisplays()
     if (section === "system" || section === "devices" || section === "network") root.refreshSystem()
+    if (section === "security" && !securityReader.running) securityReader.running = true
   }
   function refreshSystem() {
     if (!networkReader.running) networkReader.running = true
     if (!wifiReader.running) wifiReader.running = true
     if (!bluetoothReader.running) bluetoothReader.running = true
     if (!cupsReader.running) cupsReader.running = true
+    if (!securityReader.running) securityReader.running = true
   }
   function toggleWifi() { root.run("nmcli radio wifi toggle"); systemRefresh.restart() }
   function toggleBluetooth() { root.run("bluetoothctl power toggle"); systemRefresh.restart() }
@@ -641,6 +655,54 @@ Item {
             }
 
             Column {
+              width: parent.width; spacing: 14; visible: root.page === "security"
+              Label { text: "Windows Security"; font.pixelSize: 20; font.weight: Font.Normal }
+              Label {
+                width: parent.width - 10; wrapMode: Text.WordWrap
+                text: "Windows Defender Security Center is your home to view and manage the security and health of your device."
+                color: root.secondary; font.pixelSize: 12
+              }
+              Label { x: 10; text: "Protection areas"; font.pixelSize: 15; font.weight: Font.DemiBold }
+              Repeater {
+                model: [
+                  { icon: "\uf132", title: "Virus & threat protection", detail: "Protection for your device against threats",
+                    status: root.securityState.clamav === "active" ? "On" : "Off", on: root.securityState.clamav === "active" },
+                  { icon: "\uf1eb", title: "Firewall & network protection", detail: "Who and what can access your network",
+                    status: root.securityState.firewall === "active" ? "On" : "Off", on: root.securityState.firewall === "active" },
+                  { icon: "\uf108", title: "Device security", detail: "Security that comes built into your device",
+                    status: root.securityState.secureBoot === "on" ? "On" : "Off", on: root.securityState.secureBoot === "on" },
+                  { icon: "\uf023", title: "Data encryption", detail: "Encrypted volumes on this device",
+                    status: root.securityState.encrypted ? "On" : "Off", on: root.securityState.encrypted === true },
+                  { icon: "\uf1da", title: "Recovery", detail: "Snapshot configurations and restore points",
+                    status: root.securityState.snapshots > 0 ? "Ready" : "Off", on: root.securityState.snapshots > 0 }
+                ]
+                delegate: Rectangle {
+                  required property var modelData
+                  width: parent.width; height: 54
+                  color: securityMouse.containsMouse ? "#f2f2f2" : "transparent"
+                  Text {
+                    x: 14; anchors.verticalCenter: parent.verticalCenter
+                    text: modelData.icon
+                    font.family: "Font Awesome 7 Free Solid"; font.pixelSize: 17; color: root.accent
+                  }
+                  Label { x: 44; y: 9; text: modelData.title; font.pixelSize: 13 }
+                  Label { x: 44; y: 30; text: modelData.detail; color: root.secondary; font.pixelSize: 11 }
+                  Label {
+                    anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
+                    text: modelData.status
+                    color: modelData.on ? "#107c10" : "#c50f1f"; font.pixelSize: 12; font.weight: Font.DemiBold
+                  }
+                  MouseArea { id: securityMouse; anchors.fill: parent; hoverEnabled: true }
+                }
+              }
+              Label {
+                x: 10; width: parent.width - 20; wrapMode: Text.WordWrap
+                text: "Windows Security reports the Linux firewall, Secure Boot, encrypted volumes, ClamAV and snapshot state. Windows Defender and Windows Update services are not present on this system."
+                color: root.secondary; font.pixelSize: 11
+              }
+            }
+
+            Column {
               width: parent.width; spacing: 18; visible: root.page === "accounts"
               Label { x: 10; text: "Accounts"; font.weight: Font.DemiBold; font.pixelSize: 13 }
               Rectangle {
@@ -716,6 +778,12 @@ Item {
             Column {
               width: parent.width; spacing: 18; visible: root.page === "update"
               Label { x: 10; text: "Update & security"; font.weight: Font.DemiBold; font.pixelSize: 13 }
+              Rectangle {
+                width: parent.width; height: 56; radius: 2; color: root.group
+                Label { x: 14; y: 10; text: "Windows Security"; font.pixelSize: 13 }
+                Label { x: 14; y: 31; text: "Firewall, device security and protection"; color: root.secondary; font.pixelSize: 11 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Open"; onClicked: root.navigate("security") }
+              }
               Rectangle {
                 width: parent.width; height: 76; radius: 2; color: root.group
                 Label { x: 14; y: 16; text: "Windows Update"; font.pixelSize: 13 }

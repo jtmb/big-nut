@@ -315,6 +315,45 @@ class ThemeToolsTest(unittest.TestCase):
         rows = json.loads(result.stdout)
         self.assertEqual([row["title"] for row in rows], ["photo.jpg"])
 
+    def test_windows_notification_store(self):
+        state = self.home / ".local/state/omarchy/notifications"
+        state.mkdir(parents=True)
+        (state / "live.json").write_text(json.dumps([
+            {"key": "live-1", "app": "Chromium", "summary": "Live title", "body": "Live body",
+             "appIcon": "chromium", "ts": 1000, "source": "Chromium"},
+        ]))
+        (state / "history.json").write_text(json.dumps([
+            {"key": "old-1", "app": "omarchy-action", "summary": "Old title", "body": "",
+             "appIcon": "", "glyph": "\uf16a1", "ts": 900, "source": "omarchy-action"},
+        ]))
+        helper = WINDOWS / "notification-store.py"
+        subprocess.run(["python3", str(helper), "sync"], env=self.env, check=True,
+                       capture_output=True, text=True)
+        result = subprocess.run(["python3", str(helper), "list"], env=self.env, check=True,
+                                capture_output=True, text=True)
+        rows = json.loads(result.stdout)
+        self.assertEqual([row["id"] for row in rows], ["live-1", "old-1"])
+        self.assertEqual(rows[0]["title"], "Live title")
+        self.assertEqual(rows[0]["body"], "Live body")
+        self.assertEqual(rows[0]["icon"], "chromium")
+        subprocess.run(["python3", str(helper), "dismiss", "live-1"], env=self.env, check=True,
+                       capture_output=True, text=True)
+        result = subprocess.run(["python3", str(helper), "list"], env=self.env, check=True,
+                                capture_output=True, text=True)
+        self.assertEqual([row["id"] for row in json.loads(result.stdout)], ["old-1"])
+        subprocess.run(["python3", str(helper), "clear"], env=self.env, check=True,
+                       capture_output=True, text=True)
+        result = subprocess.run(["python3", str(helper), "list"], env=self.env, check=True,
+                                capture_output=True, text=True)
+        self.assertEqual(json.loads(result.stdout), [])
+
+    def test_windows_security_state_helper(self):
+        result = subprocess.run(["bash", str(WINDOWS / "security-state.sh")], env=self.env,
+                                check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+        for key in ("firewall", "secureBoot", "encrypted", "clamav", "tpm", "snapshots"):
+            self.assertIn(key, state)
+
     def test_windows_notification_dismissed_store(self):
         helper = WINDOWS / "notification-dismissed.py"
         subprocess.run(["python3", str(helper), "add", "one", "two"], env=self.env,
@@ -351,18 +390,15 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn('text: "Clear all"', clock)
         self.assertIn("dismissNotification", clock)
         self.assertIn("clearNotifications", clock)
-        self.assertIn("dismissedKeys", clock)
         self.assertIn("notificationIcon", clock)
         self.assertIn("activateNotification", clock)
         self.assertIn("execArgv", clock)
-        self.assertIn("notification-dismissed.py", clock)
-        self.assertIn("dismissedPending", clock)
+        self.assertIn("notification-store.py", clock)
+        self.assertIn("storeView", clock)
         self.assertIn("notificationIcon(row)", clock)
         self.assertIn("glyphFamily", clock)
         self.assertIn("heuristicLookup", clock)
         self.assertIn('"Screen snip"', clock)
-        self.assertIn("liveView", clock)
-        self.assertIn("mergeNotifications", clock)
         start = (ROOT / "shared/brajam.windows-taskbar/StartMenu.qml").read_text()
         self.assertIn("Recently added", start)
         self.assertIn("All apps", start)
@@ -396,6 +432,8 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn("Display orientation", settings)
         self.assertIn("setResolution", settings)
         self.assertIn("setOrientation", settings)
+        self.assertIn("Windows Security", settings)
+        self.assertIn("security-state.sh", settings)
 
     def test_windows_theme_applies_taskbar_and_rolls_back(self):
         gtk3 = self.home / ".config/gtk-3.0"
