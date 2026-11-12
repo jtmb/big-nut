@@ -10,6 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 THEME = ROOT / "themes/macos-2027-golden-gate"
+WINDOWS = ROOT / "themes/windows-10"
 
 
 class DockModelTest(unittest.TestCase):
@@ -53,9 +54,9 @@ class ThemeToolsTest(unittest.TestCase):
     def read_config(self):
         return json.loads(self.config.read_text())
 
-    def run_tool(self, name, value, check=True):
+    def run_tool(self, name, value, check=True, theme=THEME):
         interpreter = "python3" if name.endswith(".py") else "bash"
-        return subprocess.run([interpreter, str(THEME / name), value], env=self.env,
+        return subprocess.run([interpreter, str(theme / name), value], env=self.env,
                               check=check, capture_output=True, text=True)
 
     def test_hook_restores_prior_settings_after_switching_appearances(self):
@@ -257,6 +258,27 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertTrue(state["nightlight"]["enabled"])
         self.assertFalse(state["mirror"])
         self.assertTrue(state["external"])
+
+    def test_windows_theme_applies_taskbar_and_rolls_back(self):
+        self.run_tool("ui-hook.py", "windows-10", theme=WINDOWS)
+        config = self.read_config()
+        self.assertEqual(config["bar"]["position"], "bottom")
+        self.assertEqual(config["bar"]["background"], "opaque")
+        self.assertEqual(config["bar"]["layout"]["left"], [{"id": "brajam.windows-taskbar"}])
+        self.assertEqual(config["bar"]["layout"]["right"][0], {"id": "brajam.windows-tray"})
+        self.assertEqual(config["bar"]["layout"]["right"][-1], {"id": "brajam.windows-clock"})
+        self.assertIn({"id": "brajam.windows-taskbar"}, config["plugins"])
+        self.assertIn({"id": "brajam.windows-clock"}, config["plugins"])
+        self.assertIn({"id": "brajam.windows-tray"}, config["plugins"])
+        self.assertIn("brajam.dock", config["disabledPlugins"])
+        self.assertEqual(config["windowsTaskbar"]["pinned"],
+                         ["org.gnome.Nautilus", "chromium", "foot", "libreoffice-writer"])
+
+        self.run_tool("ui-hook.py", "gruvbox", theme=WINDOWS)
+        after = self.read_config()
+        for key, value in self.before.items():
+            self.assertEqual(after[key], value)
+        self.assertFalse((self.home / ".local/state/omarchy/windows-10-ui.json").exists())
 
     def test_dark_outline_setting_preserves_light_dock_and_pins(self):
         for action, expected in [("on", True), ("off", False)]:

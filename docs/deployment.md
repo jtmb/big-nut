@@ -6,10 +6,15 @@ The following Omarchy paths are symbolic links into this repository:
 | --- | --- |
 | `~/.config/omarchy/themes/macos-2027-golden-gate` | `themes/macos-2027-golden-gate` |
 | `~/.config/omarchy/themes/macos-2027-golden-gate-dark` | `themes/macos-2027-golden-gate-dark` |
+| `~/.config/omarchy/themes/windows-10` | `themes/windows-10` |
 | `~/.config/omarchy/plugins/brajam.dock` | `shared/brajam.dock` |
 | `~/.config/omarchy/plugins/brajam.golden-gate-menu` | `shared/brajam.golden-gate-menu` |
 | `~/.config/omarchy/plugins/brajam.golden-gate-widgets` | `shared/brajam.golden-gate-widgets` |
+| `~/.config/omarchy/plugins/brajam.windows-taskbar` | `shared/brajam.windows-taskbar` |
+| `~/.config/omarchy/plugins/brajam.windows-clock` | `shared/brajam.windows-clock` |
+| `~/.config/omarchy/plugins/brajam.windows-tray` | `shared/brajam.windows-tray` |
 | `~/.config/omarchy/hooks/theme-set.d/golden-gate-ui-hook.sh` | `libs/golden-gate-ui-hook.sh` |
+| `~/.config/omarchy/hooks/theme-set.d/windows-10-ui-hook.sh` | `libs/windows-10-ui-hook.sh` |
 
 The links use absolute paths. Moving or renaming this repository requires updating them. They point *from* the active user configuration *to* the tracked files, not the other way around. No packaged `/usr/share/omarchy` files are modified.
 
@@ -124,6 +129,29 @@ daemon is configured), **Color profile** (no ICC/color-management workflow), and
 **When connected to TV**. Rotation, refresh rate, and HDR likewise stay in
 Hyprland's own monitor configuration, not this page. The page states this in a
 short footnote.
+
+## Windows 10 theme
+
+`themes/windows-10` is a separate Windows 10-inspired appearance, not a
+Golden Gate variant. It uses a 40px black taskbar at the bottom:
+`brajam.windows-taskbar` (Start, search, Task View, pinned/running apps) on the
+left, `brajam.windows-tray` + Omarchy network/audio/battery +
+`brajam.windows-clock` (two-line clock, notification action center, Show desktop) on the
+right. The Start menu is the taskbar's own dark rail, all-apps list, live tiles
+and power flyout.
+
+The hook `libs/windows-10-ui-hook.sh` installs Selawik (SIL OFL Segoe UI
+metric-compatible font files under `themes/windows-10/fonts/`), snapshots the
+current bar/plugin lists, places the Windows widgets, disables the Golden Gate
+dock/menu/widget plugins, and rolls everything back on the next theme switch.
+`windowsTaskbar.pinned` in `shell.json` stores the taskbar pins. The theme's
+`hyprland.lua` sets square zero-gap windows, opaque surfaces and the
+`#0078d7` accent border.
+
+References used: the Wikimedia Commons Windows 10 taskbar and Start captures,
+the Windows 10 Settings scale-and-layout capture, and Microsoft's Windows app
+title-bar guidance. The wallpaper is an original blue four-pane drawing; no
+Microsoft wallpaper or logo asset is included.
 
 ## Menu bar logo
 

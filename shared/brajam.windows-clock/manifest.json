@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "brajam.windows-clock",
+  "name": "Windows clock and action center",
+  "version": "1.0.0",
+  "author": "Local",
+  "description": "Windows 10 two-line clock, action center and show-desktop strip",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "BarWidget.qml" },
+  "barWidget": {
+    "displayName": "Windows clock",
+    "description": "Clock, action center and show desktop",
+    "category": "System",
+    "allowMultiple": false
+  }
+}

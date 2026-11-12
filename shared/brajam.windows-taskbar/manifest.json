@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "brajam.windows-taskbar",
+  "name": "Windows taskbar",
+  "version": "1.0.0",
+  "author": "Local",
+  "description": "Windows 10 Start button, search, Task View and running app buttons",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "BarWidget.qml" },
+  "barWidget": {
+    "displayName": "Windows taskbar",
+    "description": "Start, search, Task View and pinned/running apps",
+    "category": "Compositor",
+    "allowMultiple": false
+  }
+}

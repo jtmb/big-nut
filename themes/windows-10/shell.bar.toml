@@ -1,0 +1,14 @@
+# Windows 10 taskbar. 40 logical pixels high, opaque near-black, with 24px
+# icons in 40px slots like the real taskbar at 100% scale.
+[bar]
+background       = "#0f0f0f"
+background-alpha = 1.0
+text             = "#ffffff"
+active           = "#ffffff"
+scale-with-font  = false
+size-horizontal  = 40
+size-vertical    = 40
+icon-size        = 24
+icon-canvas      = 24
+icon-slot        = 40
+status-slot      = 24

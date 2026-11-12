@@ -1,0 +1,38 @@
+mode = "light"
+
+# Windows 10 default blue accent, with the light app surfaces Microsoft uses
+# for Settings, Explorer and the Start tile backgrounds that are not accent
+# colored.
+accent = "#0078d7"
+selection = "#cce8ff"
+muted = "#767676"
+
+background = "#ffffff"
+dark_background = "#f2f2f2"
+darker_background = "#e6e6e6"
+lighter_background = "#ffffff"
+
+foreground = "#000000"
+dark_foreground = "#4d4d4d"
+light_foreground = "#1a1a1a"
+bright_foreground = "#000000"
+
+# Windows 10 console palette (Campbell).
+red = "#c50f1f"
+yellow = "#c19c00"
+orange = "#f7630c"
+green = "#13a10e"
+cyan = "#3a96dd"
+blue = "#0037da"
+magenta = "#881798"
+brown = "#8e562e"
+
+bright_red = "#e74856"
+bright_yellow = "#f9f1a5"
+bright_green = "#16c60c"
+bright_cyan = "#61d6d6"
+bright_blue = "#3b78ff"
+bright_magenta = "#b4009e"
+
+hyprland_active_border = "#0078d7"
+hyprland_inactive_border = "#b3b3b3"

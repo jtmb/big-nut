@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "brajam.windows-tray",
+  "name": "Windows tray overflow",
+  "version": "1.0.0",
+  "author": "Local",
+  "description": "Windows 10 upward tray chevron and overflow popup",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "BarWidget.qml" },
+  "barWidget": {
+    "displayName": "Windows tray",
+    "description": "Upward tray chevron and overflow",
+    "category": "System",
+    "allowMultiple": false
+  }
+}
