@@ -349,3 +349,43 @@ headerbar button.close:hover,
   background: #e81123;
   color: #ffffff;
 }
+
+/* libadwaita draws the circular fill on the window-control image, not the
+   button. Square the image and move hover colour to the button. */
+windowcontrols > button {
+  min-width: 46px;
+  min-height: 30px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+windowcontrols > button > image,
+windowcontrols > button:hover > image,
+windowcontrols > button:active > image {
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+}
+
+windowcontrols > button:hover {
+  background: #e5e5e5;
+  color: #000000;
+}
+
+windowcontrols > button.close:hover,
+windowcontrols > button.close:active {
+  background: #e81123;
+  color: #ffffff;
+}
+
+windowcontrols > button.close:hover > image,
+windowcontrols > button.close:active > image {
+  background: transparent;
+  color: #ffffff;
+}

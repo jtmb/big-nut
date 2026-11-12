@@ -423,6 +423,7 @@ class ThemeToolsTest(unittest.TestCase):
                       (self.home / ".config/gtk-4.0/settings.ini").read_text())
         css = (self.home / ".config/gtk-4.0/gtk.css").read_text()
         self.assertIn("windowcontrols", css)
+        self.assertIn("windowcontrols > button > image", css)
         self.assertIn("#e81123", css)
         self.assertIn("Selawik", css)
 

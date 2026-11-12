@@ -34,10 +34,10 @@ metric-compatible Segoe UI substitute.
 - GTK: `GTK_CSD=0` is set through Hyprland and
   `~/.config/environment.d/90-windows-10.conf`. `gtk/` contains GTK3/GTK4 CSS
   and a settings file that make header bars white, square and Windows-ordered
-  (min/max/close, Selawik), with the red close hover. The hook installs and
-  restores them, plus the matching gsettings values. GTK4/libadwaita apps keep
-  their own circular window controls; those classes are excluded from the
-  server-side bar so they never show two title bars.
+  (min/max/close, Selawik), with the red close hover, including libadwaita's
+  window controls. The hook installs and restores them, plus the matching
+  gsettings values. Those apps are still excluded from the server-side bar so
+  they never show two title bars.
 
 ## Install and apply
 
