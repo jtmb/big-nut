@@ -21,8 +21,10 @@ metric-compatible Segoe UI substitute.
   tiles, power menu.
 - Colors: white app surfaces, black window text, `#0078d7` accent, square
   corners, opaque windows and a 1px accent border.
-- Wallpaper: `backgrounds/1-windows-10-blue.webp`, an original blue pane
-  illustration.
+- Wallpaper: `backgrounds/1-windows-10-blue.webp`, an original render of
+  `backgrounds/windows-10-hero.svg`, a Hero-inspired blue pane and light-beam
+  drawing. Microsoft's Hero file is copyright and is not bundled; see
+  `backgrounds/README.md`.
 - Font: `fonts/` contains Selawik Regular, Semilight, Light, Semibold and Bold
   (SIL Open Font License 1.1, see `fonts/LICENSE.txt`). The theme hook installs
   them for the current user and refreshes fontconfig.

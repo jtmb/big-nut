@@ -78,6 +78,7 @@ Live checks: `plugin:winbars:enabled` → true, `bar_height` → 30,
 - Title alignment attempts: `/tmp/opencode/compare-title-alignment.png`
 - Titlebar on a GTK SSD app + close hover: `/tmp/opencode/compare-titlebar-gtk.png`
 - Titlebar default-white reference: `/tmp/opencode/compare-titlebar-default.png`
+- Desktop/Hero wallpaper: `/tmp/opencode/compare-desktop-hero.png`
 
 The taskbar, Start and action-center comparisons use dark Windows mode references with black surfaces, matching Big Nut's defaults. The wallpaper in the full desktop capture is an original drawing, so the taskbar strip comparison is the like-for-like surface comparison. The titlebar comparison uses a Windows 10 About dialog with a default white titlebar; it has one close button because dialogs do not show minimize/maximize. The accent-colored Settings capture documents the reference's custom accent, not Big Nut's palette.
 
@@ -107,6 +108,17 @@ Verified live:
 Evidence `/tmp/opencode/compare-title-left.png`. No `Adwaita-CRITICAL` or
 packing warnings appeared in the app logs. Apps that do not use these header
 bars are unaffected.
+
+## Remaining layout audit
+
+| Surface | Difference from Windows 10 | Next pass |
+| --- | --- | --- |
+| Start | No small tiles or true 2-row tile packing; Calendar/Files use wide/large approximations; no live Mail/People/Photos feeds, tile drag or Cortana suggestions | Add small tiles and a span-aware grid; map more live feeds where data exists |
+| Settings | Window is 900×660 versus Windows' roughly 1024×768; no acrylic; advanced display controls (HDR, colour profile, refresh rate) absent; Sound/Printers open Omarchy/CUPS instead of embedded pages | Add an embedded sound/device picker and advanced display rows that map to real commands |
+| Action center | Cards are a flat list with no app grouping, per-app notification settings, expand/collapse animation or quick-action edit mode | Group by app and add a notification-settings link |
+| Taskbar | No Cortana, thumbnail previews, taskbar overflow menu or per-app jump-list frequent list; search placeholder is the 1903 wording | Add hover thumbnails and a proper overflow menu |
+| Lock screen | Uses Omarchy's lock surface, not the Windows 10 lock screen with date/time and acrylic | Theme the lock surface as a separate pass |
+| Toasts/OSD | Notification toasts and OSD still use Omarchy styling; only the action center is Windows-shaped | Style toasts and OSD in the next pass |
 
 ## Intentional deviations
 
@@ -150,6 +162,8 @@ bars are unaffected.
 - Inactive caption buttons use `#d0d0d0` rather than Windows' exact
   `#cccccc`; the difference is a few RGB points and only shows on unfocused
   server-decorated windows.
-- The wallpaper and four-pane artwork are original drawings, not Microsoft
-  assets. No Microsoft font, icon, logo or wallpaper file is included;
-  Selawik is Microsoft's SIL OFL Segoe UI substitute.
+- The wallpaper is an original Hero-inspired drawing, not Microsoft's Hero
+  file. Microsoft's wallpaper is copyright and cannot be bundled without a
+  redistribution licence; see `themes/windows-10/backgrounds/README.md`.
+  Selawik is Microsoft's SIL OFL Segoe UI substitute; no Microsoft font, icon
+  or logo file is included.
