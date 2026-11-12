@@ -75,4 +75,6 @@ than all Windows 10 category pages; caption buttons do not turn red on hover.
 These are Linux limitations of the current Omarchy surfaces, not hidden fake
 controls.
 
+See [docs/windows-10.md](../../docs/windows-10.md) for the reference measurements and deviations.
+
 Not affiliated with or endorsed by Microsoft.

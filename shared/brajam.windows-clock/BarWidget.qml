@@ -17,6 +17,7 @@ BarWidget {
   property bool nightlightOn: false
   property bool dndOn: false
   property int notificationCount: 0
+  property var notifications: []
 
   readonly property string timeText: Qt.formatDateTime(now, "h:mm AP")
   readonly property string dateText: Qt.formatDateTime(now, "M/d/yyyy")
@@ -62,6 +63,21 @@ BarWidget {
     command: ["omarchy-shell", "notifications", "count"]
     stdout: StdioCollector { onStreamFinished: root.notificationCount = parseInt(text.trim()) || 0 }
   }
+  FileView {
+    id: historyView
+    path: Quickshell.env("HOME") + "/.local/state/omarchy/notifications/history.json"
+    watchChanges: true
+    printErrors: false
+    onLoaded: {
+      try {
+        var list = JSON.parse(text())
+        root.notifications = Array.isArray(list) ? list.slice(0, 3) : []
+      } catch (e) {
+        root.notifications = []
+      }
+    }
+    onFileChanged: reload()
+  }
   Timer { id: actionRefresh; interval: 900; onTriggered: root.refresh() }
 
   function refresh() {
@@ -73,6 +89,7 @@ BarWidget {
   }
   function openActionCenter() {
     root.actionOpen = true
+    if (historyView.path !== "") historyView.reload()
     root.refresh()
   }
   function closeActionCenter() { root.actionOpen = false }
@@ -167,7 +184,7 @@ BarWidget {
     visible: root.actionOpen
     color: "transparent"
     implicitWidth: 360
-    implicitHeight: 380
+    implicitHeight: 430
     mask: Region { item: root.actionOpen ? panel : null }
 
     HyprlandFocusGrab {
@@ -187,14 +204,57 @@ BarWidget {
         text: "Notifications"
         color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12; font.weight: Font.DemiBold
       }
+
+      Column {
+        x: 16; y: 38
+        width: parent.width - 32
+        spacing: 1
+        visible: root.notifications.length > 0
+        Repeater {
+          model: root.notifications
+          delegate: Rectangle {
+            required property var modelData
+            width: parent.width; height: 44
+            color: notificationMouse.containsMouse ? "#2f2f2f" : "transparent"
+            Column {
+              x: 4; y: 4; width: parent.width - 60
+              Text {
+                width: parent.width
+                text: modelData.summary || modelData.app || "Notification"
+                color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12
+                elide: Text.ElideRight
+              }
+              Text {
+                width: parent.width
+                text: modelData.body || ""
+                color: "#b8b8b8"; font.family: "Selawik"; font.pixelSize: 11
+                elide: Text.ElideRight
+              }
+            }
+            Text {
+              anchors.right: parent.right; anchors.rightMargin: 4; y: 4
+              text: Qt.formatDateTime(new Date((modelData.ts || 0) * 1000), "h:mm AP")
+              color: "#8a8a8a"; font.family: "Selawik"; font.pixelSize: 10
+            }
+            MouseArea {
+              id: notificationMouse
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: { root.closeActionCenter(); root.bar.run("omarchy-shell notifications showHistory") }
+            }
+          }
+        }
+      }
       Text {
+        visible: root.notifications.length === 0
         x: 16; y: 38
         width: parent.width - 32
         text: root.notificationCount > 0 ? root.notificationCount + " new notification" + (root.notificationCount === 1 ? "" : "s") : "No new notifications"
         color: "#b8b8b8"; font.family: "Selawik"; font.pixelSize: 12
       }
       Rectangle {
-        x: 16; y: 66; width: parent.width - 32; height: 34
+        x: 16; y: 196; width: parent.width - 32; height: 34
         color: historyMouse.containsMouse ? "#3a3a3a" : "#2b2b2b"
         border.width: 1; border.color: "#3f3f3f"
         Text {
@@ -212,13 +272,13 @@ BarWidget {
       }
 
       Text {
-        x: 16; y: 130
+        x: 16; y: 244
         text: "Quick actions"
         color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12; font.weight: Font.DemiBold
       }
 
       Grid {
-        x: 16; y: 160
+        x: 16; y: 274
         columns: 2
         spacing: 8
         Repeater {

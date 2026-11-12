@@ -15,6 +15,10 @@ BarWidget {
   property string searchQuery: ""
   property bool startOpen: false
   property bool taskViewOpen: false
+  property bool jumpOpen: false
+  property var jumpItem: null
+  property Item jumpAnchor: null
+  property var itemAnchors: ({})
   readonly property var taskbarConfig: shellConfig.windowsTaskbar || ({})
   readonly property var pinnedIds: taskbarConfig.pinned !== undefined
     ? taskbarConfig.pinned
@@ -144,6 +148,35 @@ BarWidget {
     root.startOpen = true
     startView.open(searchBox, text, true)
   }
+  function openJump(anchor, item) {
+    root.closeStart()
+    root.jumpAnchor = anchor
+    root.jumpItem = item
+    root.jumpOpen = true
+  }
+  function closeJump() { root.jumpOpen = false }
+  function togglePin(item) {
+    if (!item) return
+    var pinned = root.pinnedIds.indexOf(item.key) >= 0
+    root.bar.run("bash \"$HOME/.config/omarchy/themes/windows-10/taskbar-pin.sh\" "
+      + (pinned ? "unpin " : "pin ") + Util.shellQuote(item.key))
+    root.closeJump()
+  }
+  function closeAllWindows(item) {
+    if (!item) return
+    for (var i = 0; i < item.windows.length; i++) {
+      var address = String(item.windows[i].address || "")
+      if (!address) continue
+      if (address.indexOf("0x") !== 0) address = "0x" + address
+      root.bar.run("hyprctl dispatch " + Util.shellQuote("hl.dsp.window.close({ window = \"address:" + address + "\" })"))
+    }
+    root.closeJump()
+  }
+  function openJumpItem(item) {
+    if (!item) return
+    if (item.running) { root.focusWindow(item.windows[0]) } else { root.launch(item.entry) }
+    root.closeJump()
+  }
   function toggleTaskView() {
     root.closeStart()
     root.taskViewOpen = !root.taskViewOpen
@@ -152,6 +185,8 @@ BarWidget {
 
   implicitWidth: 48 + 4 + 240 + 6 + 40 + root.items.length * 40
   implicitHeight: root.barSize
+
+  Item { id: jumpProxy; visible: false; width: 40; height: root.barSize; y: 0 }
 
   Row {
     anchors.verticalCenter: parent.verticalCenter
@@ -264,9 +299,11 @@ BarWidget {
     Repeater {
       model: root.items
       delegate: Item {
+        id: appButton
         required property var modelData
         width: 40
         height: root.barSize
+        Component.onCompleted: root.itemAnchors[modelData.key] = appButton
         Rectangle {
           anchors.fill: parent
           color: appMouse.containsMouse ? "#26ffffff" : "transparent"
@@ -289,8 +326,105 @@ BarWidget {
           id: appMouse
           anchors.fill: parent
           hoverEnabled: true
+          acceptedButtons: Qt.LeftButton | Qt.RightButton
           cursorShape: Qt.PointingHandCursor
-          onClicked: root.activate(modelData)
+          onClicked: function(event) {
+            if (event.button === Qt.RightButton) root.openJump(parent, modelData)
+            else root.activate(modelData)
+          }
+        }
+      }
+    }
+  }
+
+  PopupWindow {
+    id: jumpMenu
+    anchor {
+      id: jumpAnchorPoint
+      window: root.jumpAnchor ? root.jumpAnchor.QsWindow.window : null
+      adjustment: PopupAdjustment.Slide
+      edges: Edges.Top | Edges.Left
+      gravity: Edges.Bottom | Edges.Right
+      rect.width: 1
+      rect.height: 1
+      onAnchoring: {
+        if (!root.jumpAnchor || !root.bar) return
+        var win = root.jumpAnchor.QsWindow.window
+        if (!win) return
+        var point = win.contentItem.mapFromItem(root.jumpAnchor, root.jumpAnchor.width - jumpMenu.implicitWidth, -jumpMenu.implicitHeight)
+        jumpAnchorPoint.rect.x = Math.round(Math.max(8, Math.min(point.x, win.width - jumpMenu.implicitWidth - 8)))
+        jumpAnchorPoint.rect.y = Math.round(Math.max(8, point.y))
+      }
+    }
+    visible: root.jumpOpen
+    color: "transparent"
+    implicitWidth: 240
+    implicitHeight: root.jumpItem && root.jumpItem.running ? 150 : 118
+    mask: Region { item: root.jumpOpen ? jumpPanel : null }
+
+    HyprlandFocusGrab {
+      active: root.jumpOpen
+      windows: root.jumpAnchor && root.jumpAnchor.QsWindow.window
+        ? [jumpMenu, root.jumpAnchor.QsWindow.window] : [jumpMenu]
+      onCleared: root.closeJump()
+    }
+
+    Rectangle {
+      id: jumpPanel
+      anchors.fill: parent
+      color: "#2b2b2b"
+      border.width: 1; border.color: "#4d4d4d"
+
+      Item {
+        width: parent.width; height: 34
+        Image {
+          x: 10; anchors.verticalCenter: parent.verticalCenter
+          width: 18; height: 18
+          source: root.jumpItem ? root.iconFor(root.jumpItem) : ""
+          fillMode: Image.PreserveAspectFit
+        }
+        Text {
+          x: 36; anchors.verticalCenter: parent.verticalCenter
+          width: parent.width - 46
+          text: root.jumpItem ? root.jumpItem.name : ""
+          color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12; font.weight: Font.DemiBold
+          elide: Text.ElideRight
+        }
+      }
+      Rectangle { y: 34; width: parent.width; height: 1; color: "#4d4d4d" }
+
+      Column {
+        y: 38
+        width: parent.width
+        spacing: 1
+        Repeater {
+          model: [
+            { label: "Open", action: "open" },
+            { label: root.jumpItem && root.pinnedIds.indexOf(root.jumpItem.key) >= 0 ? "Unpin from taskbar" : "Pin to taskbar", action: "pin" },
+            { label: "Close all windows", action: "close", runningOnly: true }
+          ]
+          delegate: Rectangle {
+            required property var modelData
+            width: parent.width; height: 32
+            visible: !modelData.runningOnly || (root.jumpItem && root.jumpItem.running)
+            color: jumpMouse.containsMouse ? "#3f3f3f" : "transparent"
+            Text {
+              x: 10; anchors.verticalCenter: parent.verticalCenter
+              text: modelData.label
+              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12
+            }
+            MouseArea {
+              id: jumpMouse
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                if (modelData.action === "open") root.openJumpItem(root.jumpItem)
+                else if (modelData.action === "pin") root.togglePin(root.jumpItem)
+                else root.closeAllWindows(root.jumpItem)
+              }
+            }
+          }
         }
       }
     }
@@ -323,6 +457,15 @@ BarWidget {
     function taskview(): void { root.toggleTaskView() }
     function settings(page: string): void { root.closeStart(); settingsView.open(page || "appearance") }
     function closesettings(): void { settingsView.close() }
+    function closejump(): void { root.closeJump() }
+    function jump(key: string): void {
+      for (var i = 0; i < root.items.length; i++)
+        if (root.items[i].key === key) {
+          jumpProxy.x = 48 + 4 + 240 + 6 + 40 + i * 40
+          root.openJump(jumpProxy, root.items[i])
+          return
+        }
+    }
     function hide(): void { root.closeStart(); taskView.close() }
     function debugItems(): string {
       return JSON.stringify(root.items.map(function(item) {

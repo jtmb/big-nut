@@ -151,10 +151,9 @@ dock/menu/widget plugins, and rolls everything back on the next theme switch.
 `#0078d7` accent border, and loads Omarchy's titlebar plugin with a 30px white
 bar and square Windows caption buttons for every window.
 
-References used: the Wikimedia Commons Windows 10 taskbar and Start captures,
-the Windows 10 Settings scale-and-layout capture, and Microsoft's Windows app
-title-bar guidance. The wallpaper is an original blue four-pane drawing; no
-Microsoft wallpaper or logo asset is included.
+References, live measurements and remaining deviations are recorded in
+[windows-10.md](windows-10.md). The wallpaper is an original blue four-pane
+drawing; no Microsoft wallpaper or logo asset is included.
 
 ## Menu bar logo
 

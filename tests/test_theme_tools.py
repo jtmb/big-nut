@@ -272,6 +272,18 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn("WindowsSettings", taskbar)
         self.assertIn('settingsView.open("appearance")', taskbar)
 
+    def test_windows_taskbar_pin_script(self):
+        self.run_tool("ui-hook.py", "windows-10", theme=WINDOWS)
+        subprocess.run(["bash", str(WINDOWS / "taskbar-pin.sh"), "pin", "chromium"],
+                       env=self.env, check=True, capture_output=True, text=True)
+        self.assertIn("chromium", self.read_config()["windowsTaskbar"]["pinned"])
+        subprocess.run(["bash", str(WINDOWS / "taskbar-pin.sh"), "unpin", "chromium"],
+                       env=self.env, check=True, capture_output=True, text=True)
+        self.assertNotIn("chromium", self.read_config()["windowsTaskbar"]["pinned"])
+        before = self.config.read_bytes()
+        self.assertEqual(self.run_tool("taskbar-pin.sh", "invalid", check=False, theme=WINDOWS).returncode, 2)
+        self.assertEqual(self.config.read_bytes(), before)
+
     def test_windows_action_center_and_recent_apps(self):
         clock = (ROOT / "shared/brajam.windows-clock/BarWidget.qml").read_text()
         self.assertIn("Quick actions", clock)
