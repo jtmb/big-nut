@@ -270,7 +270,7 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn("add_button", lua)
         taskbar = (ROOT / "shared/brajam.windows-taskbar/BarWidget.qml").read_text()
         self.assertIn("WindowsSettings", taskbar)
-        self.assertIn('settingsView.open("appearance")', taskbar)
+        self.assertIn('settingsView.open("home")', taskbar)
 
     def test_windows_taskbar_pin_script(self):
         self.run_tool("ui-hook.py", "windows-10", theme=WINDOWS)
@@ -292,6 +292,12 @@ class ThemeToolsTest(unittest.TestCase):
         start = (ROOT / "shared/brajam.windows-taskbar/StartMenu.qml").read_text()
         self.assertIn("Recently added", start)
         self.assertIn("All apps", start)
+        self.assertIn("weatherProc", start)
+        self.assertIn('"weather", "status"', start)
+        self.assertIn("weatherOpen", start)
+        settings = (ROOT / "shared/brajam.windows-taskbar/WindowsSettings.qml").read_text()
+        self.assertIn('id: "home"', settings)
+        self.assertIn("Network & Internet", settings)
 
     def test_windows_theme_applies_taskbar_and_rolls_back(self):
         self.run_tool("ui-hook.py", "windows-10", theme=WINDOWS)

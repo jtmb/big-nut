@@ -26,21 +26,34 @@ default `#0078d7` accent.
 | Settings | light page, `#f2f2f2` nav, `#0078d7` accent | same palette; 900×660 window with 32px title bar | `/tmp/opencode/live-settings-half.png`, `live-displays-half.png` |
 | Action center | dark flyout, notifications above quick actions | same structure; quick actions work and notifications are listed | `/tmp/opencode/action-notifs-half.png` |
 | Jump list | taskbar app context menu | right-click/`jump <id>` menu with Open, Pin/Unpin, Close all | `/tmp/opencode/jump-final-half.png` |
+| Live tile | Weather/Calendar tiles update | Weather tile refreshes every 15 minutes from `omarchy weather status` | `/tmp/opencode/start-weather4.png` |
 
 Live checks: `hyprctl getoption plugin:hyprbars:enabled` → true,
 `bar_height` → 30; the monitor is eDP-1 at 2160×1440, scale 2 (200%), 60 Hz.
 Tests: `python3 -m unittest discover -s tests -v` → 20/20.
 
+## Side-by-side comparisons
+
+- Desktop: `/tmp/opencode/compare-desktop2.png`
+- Start: `/tmp/opencode/compare-start2.png`
+- Settings: `/tmp/opencode/compare-settings2.png`
+- Action center: `/tmp/opencode/compare-action2.png`
+- Titlebar: `/tmp/opencode/compare-titlebar4.png`
+
+The reference captures use a user-selected accent color for Start/action
+center; Big Nut uses the Windows 10 default black/dark surfaces.
+
 ## Intentional deviations
 
-- Notifications are shown from Omarchy's persisted history; clicking one opens
-  the full Omarchy notification history.
-- Start tiles are static app tiles. Windows live-tile feeds/jump-list recent
-  files are application-owned data that Omarchy does not expose.
-- Settings provides Personalization, Taskbar, Display, Background and
-  Multitasking. Windows categories with no working Linux equivalent are
-  omitted rather than rendered as dead pages.
-- Caption buttons do not have the Windows 10 red close-hover fill; the
-  titlebar plugin exposes one background color per button.
+- The action center shows the three most recent entries from Omarchy's
+  persisted notification history; clicking one opens the full history.
+- The Weather Start tile is live; the remaining tiles are static because their
+  live-tile feeds are application-owned. Jump lists provide Open, Pin/Unpin
+  and Close all, but not application recent-file lists.
+- Settings provides a Home category page plus Personalization, Taskbar,
+  Display, Background and Multitasking. Accounts, Time & language, Privacy and
+  Update remain Omarchy-managed and are called out on the Home page.
+- Caption buttons do not have the Windows 10 red close-hover fill, and inactive
+  caption buttons can show their white backplates against a gray inactive bar.
 - The wallpaper and four-pane artwork are original drawings, not Microsoft
   assets.

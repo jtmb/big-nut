@@ -436,7 +436,7 @@ BarWidget {
     query: root.searchQuery
     onDismissed: root.startOpen = false
     onLaunchRequested: function(entry) { root.launch(entry); root.closeStart() }
-    onSettingsRequested: { root.closeStart(); settingsView.open("appearance") }
+    onSettingsRequested: { root.closeStart(); settingsView.open("home") }
   }
 
   TaskView {
@@ -455,9 +455,10 @@ BarWidget {
     function start(): void { root.toggleStart() }
     function search(text: string): void { root.openSearch(String(text || "")) }
     function taskview(): void { root.toggleTaskView() }
-    function settings(page: string): void { root.closeStart(); settingsView.open(page || "appearance") }
+    function settings(page: string): void { root.closeStart(); settingsView.open(page || "home") }
     function closesettings(): void { settingsView.close() }
     function closejump(): void { root.closeJump() }
+    function weather(): void { root.openStart(); startView.weatherOpen = true }
     function jump(key: string): void {
       for (var i = 0; i < root.items.length; i++)
         if (root.items[i].key === key) {

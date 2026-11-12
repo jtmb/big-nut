@@ -12,7 +12,7 @@ Item {
   id: root
   property var bar: null
   property bool opened: false
-  property string page: "appearance"
+  property string page: "home"
   property bool maximized: false
   property var config: ({})
   property string opacityMode: "transparent"
@@ -70,7 +70,7 @@ Item {
   readonly property color accent: "#0078d7"
   readonly property int workspaceId: Hyprland.focusedMonitor && Hyprland.focusedMonitor.activeWorkspace
     ? Hyprland.focusedMonitor.activeWorkspace.id : -1
-  readonly property string title: page === "dock" ? "Taskbar" : page === "displays" ? "Display" : page === "desktop" ? "Multitasking" : page === "wallpaper" ? "Background" : "Personalization"
+  readonly property string title: page === "home" ? "Home" : page === "dock" ? "Taskbar" : page === "displays" ? "Display" : page === "desktop" ? "Multitasking" : page === "wallpaper" ? "Background" : "Personalization"
 
   FileView {
     path: Quickshell.env("HOME") + "/.config/omarchy/shell.json"
@@ -102,7 +102,7 @@ Item {
     onTriggered: root.refreshDisplays()
   }
   function open(section) {
-    root.page = section || "appearance"
+    root.page = section || "home"
     root.opened = true
     root.search = ""
     if (!modeReader.running) modeReader.running = true
@@ -230,6 +230,7 @@ Item {
           x: 10; y: 104; width: parent.width - 20; spacing: 3
           Repeater {
             model: [
+              { id: "home", title: "Home", icon: "\uf015", color: "#0078d7" },
               { id: "appearance", title: "Personalization", icon: "\uf042", color: "#0078d7" },
               { id: "dock", title: "Taskbar", icon: "\uf108", color: "#0078d7" },
               { id: "displays", title: "Display", icon: "\uf109", color: "#0078d7" },
@@ -278,6 +279,80 @@ Item {
           Column {
             id: pages
             width: content.width - 8; spacing: 18
+
+            Column {
+              width: parent.width; spacing: 18; visible: root.page === "home"
+              Label { x: 10; text: "Windows 10"; font.weight: Font.DemiBold; font.pixelSize: 13 }
+              Rectangle {
+                width: parent.width; height: 92; radius: 2; color: root.group
+                Label { x: 14; y: 16; text: "Windows 10"; font.pixelSize: 15; font.weight: Font.DemiBold }
+                Label { x: 14; y: 40; text: "Light mode · default blue accent"; color: root.secondary; font.pixelSize: 12 }
+                Rectangle { x: 14; y: 62; width: 20; height: 20; color: "#0078d7" }
+                Label { x: 42; y: 64; text: "#0078d7"; font.pixelSize: 12 }
+              }
+              Label { x: 10; text: "System"; font.weight: Font.DemiBold; font.pixelSize: 13 }
+              Column {
+                width: parent.width; spacing: 1
+                Repeater {
+                  model: [
+                    { title: "Display", detail: "Scale, text size, brightness and Night Shift", target: "displays" },
+                    { title: "Sound", detail: "Output, volume and applications", command: "omarchy-shell shell summon omarchy.audio" },
+                    { title: "Power & battery", detail: "Battery, power profiles and system information", command: "omarchy-shell shell summon omarchy.power" },
+                    { title: "Notifications", detail: "Notification history", command: "omarchy-shell notifications showHistory" }
+                  ]
+                  delegate: Rectangle {
+                    required property var modelData
+                    width: parent.width; height: 56; radius: 2; color: root.group
+                    Label { x: 14; y: 10; text: modelData.title; font.pixelSize: 13 }
+                    Label { x: 14; y: 31; text: modelData.detail; color: root.secondary; font.pixelSize: 11 }
+                    Label { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; text: "›"; color: root.secondary; font.pixelSize: 18 }
+                    MouseArea {
+                      anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                      onClicked: {
+                        if (modelData.target) root.navigate(modelData.target)
+                        else { root.close(); root.run(modelData.command) }
+                      }
+                    }
+                  }
+                }
+              }
+              Label { x: 10; text: "Personalization"; font.weight: Font.DemiBold; font.pixelSize: 13 }
+              Column {
+                width: parent.width; spacing: 1
+                Repeater {
+                  model: [
+                    { title: "Colors and appearance", detail: "Transparency and Windows 10 surfaces", target: "appearance" },
+                    { title: "Background", detail: "Desktop wallpaper", target: "wallpaper" },
+                    { title: "Taskbar", detail: "Screen edge and taskbar behavior", target: "dock" },
+                    { title: "Multitasking", detail: "Workspaces and window layout", target: "desktop" }
+                  ]
+                  delegate: Rectangle {
+                    required property var modelData
+                    width: parent.width; height: 56; radius: 2; color: root.group
+                    Label { x: 14; y: 10; text: modelData.title; font.pixelSize: 13 }
+                    Label { x: 14; y: 31; text: modelData.detail; color: root.secondary; font.pixelSize: 11 }
+                    Label { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; text: "›"; color: root.secondary; font.pixelSize: 18 }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.navigate(modelData.target) }
+                  }
+                }
+              }
+              Label { x: 10; text: "Network & Internet"; font.weight: Font.DemiBold; font.pixelSize: 13 }
+              Rectangle {
+                width: parent.width; height: 56; radius: 2; color: root.group
+                Label { x: 14; y: 10; text: "Wi-Fi and network"; font.pixelSize: 13 }
+                Label { x: 14; y: 31; text: "Open Omarchy's network panel"; color: root.secondary; font.pixelSize: 11 }
+                Label { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; text: "›"; color: root.secondary; font.pixelSize: 18 }
+                MouseArea {
+                  anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                  onClicked: { root.close(); root.run("omarchy-shell shell summon omarchy.network") }
+                }
+              }
+              Label {
+                x: 10; width: parent.width - 20; wrapMode: Text.WordWrap
+                text: "Accounts, Time & language, Privacy and Update are managed by Omarchy outside this window."
+                color: root.secondary; font.pixelSize: 11
+              }
+            }
 
             Column {
               width: parent.width; spacing: 18; visible: root.page === "appearance"

@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 import qs.Commons
 
 // Windows 10 Start: rail, all-apps list, live-tile area and power menu.
@@ -14,6 +15,10 @@ PopupWindow {
   property bool searchMode: false
   property bool expandedRail: false
   property bool powerOpen: false
+  property bool weatherOpen: false
+  property string weatherStatus: ""
+  property string weatherTemp: ""
+  property string weatherLocation: ""
   signal dismissed()
   signal launchRequested(var entry)
   signal settingsRequested()
@@ -28,8 +33,32 @@ PopupWindow {
   readonly property var tileApps: root.buildTiles()
   readonly property string initial: (Quickshell.env("USER") || "U").charAt(0).toUpperCase()
 
+  Process {
+    id: weatherProc
+    command: ["omarchy", "weather", "status"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        var value = String(text || "").trim()
+        root.weatherStatus = value
+        var parts = value.split("·")
+        root.weatherLocation = String(parts[0] || "").trim()
+        var match = value.match(/Temp\s+([+-]?[0-9]+\s*°[CF])/i)
+        root.weatherTemp = match ? match[1].replace(/\s+/g, " ") : ""
+      }
+    }
+  }
+  Timer {
+    interval: 900000
+    repeat: true
+    running: true
+    onTriggered: if (!weatherProc.running) weatherProc.running = true
+  }
+  Component.onCompleted: if (!weatherProc.running) weatherProc.running = true
+  function parseWeather() { if (!weatherProc.running) weatherProc.running = true }
+
   function open(anchor, text, search) {
     anchorItem = anchor
+    if (!weatherProc.running) weatherProc.running = true
     query = String(text || "")
     searchMode = search === true
     powerOpen = false
@@ -68,7 +97,7 @@ PopupWindow {
   function buildTiles() {
     var ids = ["org.gnome.Nautilus", "chromium", "foot", "libreoffice-writer",
                "org.gnome.Papers", "mpv", "omawrite", "omacalc"]
-    var out = []
+    var out = [{ weather: true, name: "Weather", color: "#0078d7" }]
     for (var i = 0; i < ids.length; i++) {
       var entry = DesktopEntries.byId(ids[i])
       if (!entry || entry.noDisplay) continue
@@ -278,7 +307,10 @@ PopupWindow {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.launchRequested(modelData.entry)
+                onClicked: {
+                if (modelData.weather) root.weatherOpen = true
+                else root.launchRequested(modelData.entry)
+              }
               }
             }
           }
@@ -328,7 +360,10 @@ PopupWindow {
                 enabled: modelData.type === "app"
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.launchRequested(modelData.entry)
+                onClicked: {
+                if (modelData.weather) root.weatherOpen = true
+                else root.launchRequested(modelData.entry)
+              }
               }
             }
           }
@@ -362,11 +397,29 @@ PopupWindow {
             border.width: tileMouse.containsMouse ? 1 : 0
             border.color: "#ffffff"
             Image {
+              visible: !modelData.weather
               anchors.centerIn: parent
               anchors.verticalCenterOffset: -8
               width: 34; height: 34
-              source: Quickshell.iconPath(modelData.entry.icon, true)
+              source: modelData.weather ? "" : Quickshell.iconPath(modelData.entry.icon, true)
               fillMode: Image.PreserveAspectFit
+            }
+            Text {
+              visible: modelData.weather === true
+              anchors.horizontalCenter: parent.horizontalCenter
+              y: 22
+              text: root.weatherTemp || "—"
+              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 24; font.weight: Font.Light
+            }
+            Text {
+              visible: modelData.weather === true
+              anchors.horizontalCenter: parent.horizontalCenter
+              y: 52
+              width: parent.width - 14
+              text: root.weatherLocation || "Weather"
+              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 10
+              horizontalAlignment: Text.AlignHCenter
+              elide: Text.ElideRight
             }
             Text {
               x: 7; y: parent.height - 22
@@ -381,9 +434,42 @@ PopupWindow {
               anchors.fill: parent
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
-              onClicked: root.launchRequested(modelData.entry)
+              onClicked: {
+                if (modelData.weather) root.weatherOpen = true
+                else root.launchRequested(modelData.entry)
+              }
             }
           }
+        }
+      }
+      Rectangle {
+        visible: root.weatherOpen
+        x: 16; y: 40
+        width: 300; height: 190
+        color: "#1f1f1f"
+        border.width: 1; border.color: "#4d4d4d"
+        Text { x: 16; y: 14; text: "Weather"; color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 14; font.weight: Font.DemiBold }
+        Text { x: 16; y: 42; text: root.weatherLocation || "Weather"; color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 17 }
+        Text { x: 16; y: 70; text: root.weatherTemp || "—"; color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 34; font.weight: Font.Light }
+        Text {
+          x: 16; y: 116; width: parent.width - 32
+          text: root.weatherStatus
+          color: "#b8b8b8"; font.family: "Selawik"; font.pixelSize: 11
+          wrapMode: Text.WordWrap
+        }
+        Rectangle {
+          x: 16; y: parent.height - 40; width: 90; height: 27
+          color: refreshMouse.containsMouse ? "#3f3f3f" : "#2b2b2b"
+          border.width: 1; border.color: "#4d4d4d"
+          Text { anchors.centerIn: parent; text: "Refresh"; color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 11 }
+          MouseArea { id: refreshMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.parseWeather() }
+        }
+        Rectangle {
+          anchors.right: parent.right; anchors.rightMargin: 16; y: parent.height - 40; width: 70; height: 27
+          color: closeWeatherMouse.containsMouse ? "#3f3f3f" : "#2b2b2b"
+          border.width: 1; border.color: "#4d4d4d"
+          Text { anchors.centerIn: parent; text: "Close"; color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 11 }
+          MouseArea { id: closeWeatherMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.weatherOpen = false }
         }
       }
     }
