@@ -17,6 +17,8 @@ BarWidget {
   property bool nightlightOn: false
   property bool dndOn: false
   property int notificationCount: 0
+  property var liveNotifications: []
+  property var historyNotifications: []
   property var notifications: []
 
   readonly property string timeText: Qt.formatDateTime(now, "h:mm AP")
@@ -64,6 +66,22 @@ BarWidget {
     stdout: StdioCollector { onStreamFinished: root.notificationCount = parseInt(text.trim()) || 0 }
   }
   FileView {
+    id: liveView
+    path: Quickshell.env("HOME") + "/.local/state/omarchy/notifications/live.json"
+    watchChanges: true
+    printErrors: false
+    onLoaded: {
+      try {
+        var list = JSON.parse(text())
+        root.liveNotifications = Array.isArray(list) ? list : []
+      } catch (e) {
+        root.liveNotifications = []
+      }
+      root.mergeNotifications()
+    }
+    onFileChanged: reload()
+  }
+  FileView {
     id: historyView
     path: Quickshell.env("HOME") + "/.local/state/omarchy/notifications/history.json"
     watchChanges: true
@@ -71,12 +89,25 @@ BarWidget {
     onLoaded: {
       try {
         var list = JSON.parse(text())
-        root.notifications = Array.isArray(list) ? list.slice(0, 3) : []
+        root.historyNotifications = Array.isArray(list) ? list : []
       } catch (e) {
-        root.notifications = []
+        root.historyNotifications = []
       }
+      root.mergeNotifications()
     }
     onFileChanged: reload()
+  }
+  function mergeNotifications() {
+    var merged = []
+    var seen = ({})
+    var sources = root.liveNotifications.concat(root.historyNotifications)
+    for (var i = 0; i < sources.length && merged.length < 3; i++) {
+      var row = sources[i]
+      if (!row || (row.key && seen[row.key])) continue
+      if (row.key) seen[row.key] = true
+      merged.push(row)
+    }
+    root.notifications = merged
   }
   Timer { id: actionRefresh; interval: 900; onTriggered: root.refresh() }
 
@@ -90,6 +121,7 @@ BarWidget {
   function openActionCenter() {
     root.actionOpen = true
     if (historyView.path !== "") historyView.reload()
+    if (liveView.path !== "") liveView.reload()
     root.refresh()
   }
   function closeActionCenter() { root.actionOpen = false }

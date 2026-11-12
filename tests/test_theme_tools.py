@@ -289,6 +289,8 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn("Quick actions", clock)
         self.assertIn("nmcli radio wifi toggle", clock)
         self.assertIn("omarchy-shell notifications toggleDnd", clock)
+        self.assertIn("liveView", clock)
+        self.assertIn("mergeNotifications", clock)
         start = (ROOT / "shared/brajam.windows-taskbar/StartMenu.qml").read_text()
         self.assertIn("Recently added", start)
         self.assertIn("All apps", start)
@@ -298,6 +300,8 @@ class ThemeToolsTest(unittest.TestCase):
         settings = (ROOT / "shared/brajam.windows-taskbar/WindowsSettings.qml").read_text()
         self.assertIn('id: "home"', settings)
         self.assertIn("Network & Internet", settings)
+        for page in ("accounts", "time", "privacy", "update"):
+            self.assertIn('id: "' + page + '"', settings)
 
     def test_windows_theme_applies_taskbar_and_rolls_back(self):
         self.run_tool("ui-hook.py", "windows-10", theme=WINDOWS)

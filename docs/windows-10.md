@@ -23,7 +23,7 @@ default `#0078d7` accent.
 | Start palette | dark `#1f1f1f` by default | `#1f1f1f` with `#191919` rail | `start-recent-half.png` |
 | Start content | Recently added, All apps, tiles, rail, power | Recently added, All apps, tiles, rail, power | `start-recent-half.png` |
 | Titlebar | 30px Windows 10 bar, square caption buttons | 30px white bar, square transparent buttons, Selawik | `/tmp/opencode/final4-half.png` |
-| Settings | light page, `#f2f2f2` nav, `#0078d7` accent | same palette; 900×660 window with 32px title bar | `/tmp/opencode/live-settings-half.png`, `live-displays-half.png` |
+| Settings | light page, `#f2f2f2` nav, `#0078d7` accent | same palette; 900×660 window with 32px title bar and Home/Accounts/Time/Privacy/Update pages | `/tmp/opencode/settings-home3.png`, `live-displays.png` |
 | Action center | dark flyout, notifications above quick actions | same structure; quick actions work and notifications are listed | `/tmp/opencode/action-notifs-half.png` |
 | Jump list | taskbar app context menu | right-click/`jump <id>` menu with Open, Pin/Unpin, Close all | `/tmp/opencode/jump-final-half.png` |
 | Live tile | Weather/Calendar tiles update | Weather tile refreshes every 15 minutes from `omarchy weather status` | `/tmp/opencode/start-weather4.png` |
@@ -34,11 +34,11 @@ Tests: `python3 -m unittest discover -s tests -v` → 20/20.
 
 ## Side-by-side comparisons
 
-- Desktop: `/tmp/opencode/compare-desktop2.png`
-- Start: `/tmp/opencode/compare-start2.png`
-- Settings: `/tmp/opencode/compare-settings2.png`
-- Action center: `/tmp/opencode/compare-action2.png`
-- Titlebar: `/tmp/opencode/compare-titlebar4.png`
+- Desktop: `/tmp/opencode/compare-desktop3.png`
+- Start: `/tmp/opencode/compare-start3.png`
+- Settings: `/tmp/opencode/compare-settings3.png`
+- Action center: `/tmp/opencode/compare-action3.png`
+- Titlebar: `/tmp/opencode/compare-titlebar5.png`
 
 The reference captures use a user-selected accent color for Start/action
 center; Big Nut uses the Windows 10 default black/dark surfaces.
@@ -50,9 +50,10 @@ center; Big Nut uses the Windows 10 default black/dark surfaces.
 - The Weather Start tile is live; the remaining tiles are static because their
   live-tile feeds are application-owned. Jump lists provide Open, Pin/Unpin
   and Close all, but not application recent-file lists.
-- Settings provides a Home category page plus Personalization, Taskbar,
-  Display, Background and Multitasking. Accounts, Time & language, Privacy and
-  Update remain Omarchy-managed and are called out on the Home page.
+- Settings provides Home, Accounts, Time & language, Privacy & security,
+  Update & security, Personalization, Taskbar, Display, Background and
+  Multitasking pages. The actions behind Accounts/Time/Privacy/Update are real
+  Omarchy commands or panels, not Windows services.
 - Caption buttons do not have the Windows 10 red close-hover fill, and inactive
   caption buttons can show their white backplates against a gray inactive bar.
 - The wallpaper and four-pane artwork are original drawings, not Microsoft

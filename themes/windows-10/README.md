@@ -67,13 +67,14 @@ Wikimedia Commons Windows 10 taskbar and Start menu captures, the Windows 10
 Settings scale and layout capture, and Microsoft's Windows app title bar design
 guidance.
 
-Remaining deviations: the action center embeds the three most recent history
-entries and links to the full history; the Weather Start tile is live while
+Remaining deviations: the action center embeds current/history notifications
+(up to three) and links to the full history; the Weather Start tile is live while
 application-owned tiles remain static; taskbar jump lists provide open,
-pin/unpin and close-all but not application recent-file lists; the Settings
-surface has a Home category page plus five working pages rather than every
-Windows 10 category; caption buttons do not turn red on hover. These are Linux
-limitations of the current Omarchy surfaces, not hidden fake controls.
+pin/unpin and close-all but not application recent-file lists; Settings has
+Home, Accounts, Time & language, Privacy & security, Update & security,
+Personalization, Taskbar, Display, Background and Multitasking pages; caption
+buttons do not turn red on hover. These are Linux limitations of the current
+Omarchy surfaces, not hidden fake controls.
 
 See [docs/windows-10.md](../../docs/windows-10.md) for the reference measurements and deviations.
 

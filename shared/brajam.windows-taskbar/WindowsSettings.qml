@@ -13,6 +13,7 @@ Item {
   property var bar: null
   property bool opened: false
   property string page: "home"
+  property date now: new Date()
   property bool maximized: false
   property var config: ({})
   property string opacityMode: "transparent"
@@ -70,7 +71,7 @@ Item {
   readonly property color accent: "#0078d7"
   readonly property int workspaceId: Hyprland.focusedMonitor && Hyprland.focusedMonitor.activeWorkspace
     ? Hyprland.focusedMonitor.activeWorkspace.id : -1
-  readonly property string title: page === "home" ? "Home" : page === "dock" ? "Taskbar" : page === "displays" ? "Display" : page === "desktop" ? "Multitasking" : page === "wallpaper" ? "Background" : "Personalization"
+  readonly property string title: page === "home" ? "Home" : page === "accounts" ? "Accounts" : page === "time" ? "Time & language" : page === "privacy" ? "Privacy & security" : page === "update" ? "Update & security" : page === "dock" ? "Taskbar" : page === "displays" ? "Display" : page === "desktop" ? "Multitasking" : page === "wallpaper" ? "Background" : "Personalization"
 
   FileView {
     path: Quickshell.env("HOME") + "/.config/omarchy/shell.json"
@@ -100,6 +101,12 @@ Item {
     interval: 700
     repeat: false
     onTriggered: root.refreshDisplays()
+  }
+  Timer {
+    interval: 1000
+    repeat: true
+    running: root.opened
+    onTriggered: root.now = new Date()
   }
   function open(section) {
     root.page = section || "home"
@@ -231,6 +238,10 @@ Item {
           Repeater {
             model: [
               { id: "home", title: "Home", icon: "\uf015", color: "#0078d7" },
+              { id: "accounts", title: "Accounts", icon: "\uf007", color: "#0078d7" },
+              { id: "time", title: "Time & language", icon: "\uf017", color: "#0078d7" },
+              { id: "privacy", title: "Privacy & security", icon: "\uf3ed", color: "#0078d7" },
+              { id: "update", title: "Update & security", icon: "\uf021", color: "#0078d7" },
               { id: "appearance", title: "Personalization", icon: "\uf042", color: "#0078d7" },
               { id: "dock", title: "Taskbar", icon: "\uf108", color: "#0078d7" },
               { id: "displays", title: "Display", icon: "\uf109", color: "#0078d7" },
@@ -347,11 +358,116 @@ Item {
                   onClicked: { root.close(); root.run("omarchy-shell shell summon omarchy.network") }
                 }
               }
-              Label {
-                x: 10; width: parent.width - 20; wrapMode: Text.WordWrap
-                text: "Accounts, Time & language, Privacy and Update are managed by Omarchy outside this window."
-                color: root.secondary; font.pixelSize: 11
+              Label { x: 10; text: "Accounts and system"; font.weight: Font.DemiBold; font.pixelSize: 13 }
+              Column {
+                width: parent.width; spacing: 1
+                Repeater {
+                  model: [
+                    { title: "Accounts", detail: "User, sign out and lock screen", target: "accounts" },
+                    { title: "Time & language", detail: "Time zone, date and language", target: "time" },
+                    { title: "Privacy & security", detail: "Notifications, Focus assist and lock", target: "privacy" },
+                    { title: "Update & security", detail: "Omarchy and theme updates", target: "update" }
+                  ]
+                  delegate: Rectangle {
+                    required property var modelData
+                    width: parent.width; height: 56; radius: 2; color: root.group
+                    Label { x: 14; y: 10; text: modelData.title; font.pixelSize: 13 }
+                    Label { x: 14; y: 31; text: modelData.detail; color: root.secondary; font.pixelSize: 11 }
+                    Label { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; text: "›"; color: root.secondary; font.pixelSize: 18 }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.navigate(modelData.target) }
+                  }
+                }
               }
+            }
+
+            Column {
+              width: parent.width; spacing: 18; visible: root.page === "accounts"
+              Label { x: 10; text: "Accounts"; font.weight: Font.DemiBold; font.pixelSize: 13 }
+              Rectangle {
+                width: parent.width; height: 92; radius: 2; color: root.group
+                Rectangle { x: 14; y: 20; width: 52; height: 52; radius: 26; color: "#0078d7" }
+                Text { x: 14; y: 20; width: 52; height: 52; text: Quickshell.env("USER").charAt(0).toUpperCase(); color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 24; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                Label { x: 80; y: 24; text: Quickshell.env("USER"); font.pixelSize: 15; font.weight: Font.DemiBold }
+                Label { x: 80; y: 48; text: "Local account"; color: root.secondary; font.pixelSize: 12 }
+              }
+              Rectangle {
+                width: parent.width; height: 52; radius: 2; color: root.group
+                Label { x: 14; anchors.verticalCenter: parent.verticalCenter; text: "About this computer"; font.pixelSize: 13 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Open"; onClicked: { root.close(); root.run("omarchy-launch-about") } }
+              }
+              Rectangle {
+                width: parent.width; height: 52; radius: 2; color: root.group
+                Label { x: 14; anchors.verticalCenter: parent.verticalCenter; text: "Lock screen"; font.pixelSize: 13 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Lock"; onClicked: { root.close(); root.run("omarchy system lock") } }
+              }
+              Rectangle {
+                width: parent.width; height: 52; radius: 2; color: root.group
+                Label { x: 14; anchors.verticalCenter: parent.verticalCenter; text: "Sign out"; font.pixelSize: 13 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Sign out"; onClicked: { root.close(); root.run("omarchy system logout") } }
+              }
+            }
+
+            Column {
+              width: parent.width; spacing: 18; visible: root.page === "time"
+              Label { x: 10; text: "Time & language"; font.weight: Font.DemiBold; font.pixelSize: 13 }
+              Rectangle {
+                width: parent.width; height: 86; radius: 2; color: root.group
+                Label { x: 14; y: 16; text: "Date & time"; font.pixelSize: 13 }
+                Label { x: 14; y: 40; text: Qt.formatDateTime(root.now, "dddd, MMMM d, yyyy  ·  h:mm AP"); font.pixelSize: 15; font.weight: Font.DemiBold }
+              }
+              Rectangle {
+                width: parent.width; height: 52; radius: 2; color: root.group
+                Label { x: 14; anchors.verticalCenter: parent.verticalCenter; text: "Time zone"; font.pixelSize: 13 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Choose"; onClicked: { root.close(); root.run("omarchy menu timezone") } }
+              }
+              Rectangle {
+                width: parent.width; height: 52; radius: 2; color: root.group
+                Label { x: 14; anchors.verticalCenter: parent.verticalCenter; text: "Show current time"; font.pixelSize: 13 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Notify"; onClicked: root.run("omarchy notification time") }
+              }
+              Label { x: 10; width: parent.width - 20; wrapMode: Text.WordWrap; text: "Language and locale can be changed from Omarchy's language command; this page keeps the Windows 10 date/time controls."; color: root.secondary; font.pixelSize: 11 }
+            }
+
+            Column {
+              width: parent.width; spacing: 18; visible: root.page === "privacy"
+              Label { x: 10; text: "Privacy & security"; font.weight: Font.DemiBold; font.pixelSize: 13 }
+              Rectangle {
+                width: parent.width; height: 52; radius: 2; color: root.group
+                Label { x: 14; anchors.verticalCenter: parent.verticalCenter; text: "Notification history"; font.pixelSize: 13 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Open"; onClicked: { root.close(); root.run("omarchy-shell notifications showHistory") } }
+              }
+              Rectangle {
+                width: parent.width; height: 52; radius: 2; color: root.group
+                Label { x: 14; anchors.verticalCenter: parent.verticalCenter; text: "Focus assist"; font.pixelSize: 13 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Toggle"; onClicked: root.run("omarchy-shell notifications toggleDnd") }
+              }
+              Rectangle {
+                width: parent.width; height: 52; radius: 2; color: root.group
+                Label { x: 14; anchors.verticalCenter: parent.verticalCenter; text: "Lock screen"; font.pixelSize: 13 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Lock"; onClicked: { root.close(); root.run("omarchy system lock") } }
+              }
+              Rectangle {
+                width: parent.width; height: 52; radius: 2; color: root.group
+                Label { x: 14; anchors.verticalCenter: parent.verticalCenter; text: "Crash capture"; font.pixelSize: 13 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Toggle"; onClicked: root.run("omarchy toggle crash capture") }
+              }
+            }
+
+            Column {
+              width: parent.width; spacing: 18; visible: root.page === "update"
+              Label { x: 10; text: "Update & security"; font.weight: Font.DemiBold; font.pixelSize: 13 }
+              Rectangle {
+                width: parent.width; height: 76; radius: 2; color: root.group
+                Label { x: 14; y: 16; text: "Windows Update"; font.pixelSize: 13 }
+                Label { x: 14; y: 40; text: "Omarchy and system packages"; color: root.secondary; font.pixelSize: 11 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Check"; onClicked: { root.close(); root.run("omarchy update") } }
+              }
+              Rectangle {
+                width: parent.width; height: 52; radius: 2; color: root.group
+                Label { x: 14; anchors.verticalCenter: parent.verticalCenter; text: "Theme updates"; font.pixelSize: 13 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Update"; onClicked: root.run("omarchy theme update") }
+              }
+              Label { x: 10; width: parent.width - 20; wrapMode: Text.WordWrap; text: "Updates are provided by Omarchy; no Windows Update service is present."; color: root.secondary; font.pixelSize: 11 }
             }
 
             Column {
