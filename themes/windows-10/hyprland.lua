@@ -53,6 +53,7 @@ if custom_file then
           enabled = true,
           bar_height = 30,
           bar_color = "#ffffff",
+          bar_color_inactive = "#ffffff",
           col = { text = "#000000" },
           bar_text_font = "Selawik",
           bar_text_size = 12,

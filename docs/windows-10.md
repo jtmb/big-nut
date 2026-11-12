@@ -63,9 +63,13 @@ The Start and action-center comparisons use dark Windows mode references with bl
   Update & security, Personalization, Taskbar, Display, Background and
   Multitasking pages. The actions behind the new categories are real Omarchy
   commands or panels, not Windows services.
+- The custom caption bar applies to server-decorated windows (Foot, most
+  toolkits). GTK apps such as Nautilus and the OpenCode terminal draw their own
+  client-side header bars, which the theme cannot replace without changing the
+  application; those bars are gray rather than Windows white.
 - Inactive caption buttons use `#d0d0d0` rather than Windows' exact
   `#cccccc`; the difference is a few RGB points and only shows on unfocused
-  windows.
+  server-decorated windows.
 - The wallpaper and four-pane artwork are original drawings, not Microsoft
   assets. No Microsoft font, icon, logo or wallpaper file is included;
   Selawik is Microsoft's SIL OFL Segoe UI substitute.

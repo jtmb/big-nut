@@ -64,7 +64,7 @@ two-line clock, Start rail/tile proportions, square surfaces, 30px white window
 caption bars with left-aligned titles, square min/max/close buttons, the
 `#e81123` red close hover, light Settings palette and `#0078d7` accent follow
 Windows 10 at 100% scale. Applications still draw their own client-area chrome
-and menus. Start's Settings button opens
+and menus, and GTK apps keep their own client-side header bars. Start's Settings button opens
 the Windows Settings window (Personalization, Taskbar, Display, Background and
 Multitasking), and the action center has a working quick-actions flyout. The
 reference screenshots used while building this were the
