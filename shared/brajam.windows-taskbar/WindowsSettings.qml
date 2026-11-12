@@ -21,6 +21,10 @@ Item {
   property string previousPage: ""
   property var displayState: ({})
   property bool displayRefreshPending: false
+  property string networkName: ""
+  property bool wifiOn: false
+  property bool bluetoothOn: false
+  property bool cupsOn: false
   readonly property var dock: config.dock || ({})
   readonly property var focusedDisplay: {
     var list = displayState.monitors || []
@@ -71,7 +75,19 @@ Item {
   readonly property color accent: "#0078d7"
   readonly property int workspaceId: Hyprland.focusedMonitor && Hyprland.focusedMonitor.activeWorkspace
     ? Hyprland.focusedMonitor.activeWorkspace.id : -1
-  readonly property string title: page === "home" ? "Home" : page === "accounts" ? "Accounts" : page === "time" ? "Time & language" : page === "privacy" ? "Privacy & security" : page === "update" ? "Update & security" : page === "dock" ? "Taskbar" : page === "displays" ? "Display" : page === "desktop" ? "Multitasking" : page === "wallpaper" ? "Background" : "Personalization"
+  readonly property string title: page === "home" ? "Home"
+    : page === "system" ? "System"
+    : page === "devices" ? "Devices"
+    : page === "network" ? "Network & Internet"
+    : page === "accounts" ? "Accounts"
+    : page === "time" ? "Time & language"
+    : page === "privacy" ? "Privacy & security"
+    : page === "update" ? "Update & security"
+    : page === "dock" ? "Taskbar"
+    : page === "displays" ? "Display"
+    : page === "desktop" ? "Multitasking"
+    : page === "wallpaper" ? "Background"
+    : "Personalization"
 
   FileView {
     path: Quickshell.env("HOME") + "/.config/omarchy/shell.json"
@@ -96,6 +112,26 @@ Item {
     }
     onExited: if (root.displayRefreshPending) root.refreshDisplays()
   }
+  Process {
+    id: networkReader
+    command: ["bash", "-c", "nmcli -t -f NAME connection show --active 2>/dev/null | head -1"]
+    stdout: StdioCollector { onStreamFinished: root.networkName = text.trim() }
+  }
+  Process {
+    id: wifiReader
+    command: ["nmcli", "radio", "wifi"]
+    stdout: StdioCollector { onStreamFinished: root.wifiOn = text.trim() === "enabled" }
+  }
+  Process {
+    id: bluetoothReader
+    command: ["bash", "-c", "bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo on || echo off"]
+    stdout: StdioCollector { onStreamFinished: root.bluetoothOn = text.trim() === "on" }
+  }
+  Process {
+    id: cupsReader
+    command: ["bash", "-c", "systemctl is-active cups 2>/dev/null || true"]
+    stdout: StdioCollector { onStreamFinished: root.cupsOn = text.trim() === "active" }
+  }
   Timer {
     id: displayRefresh
     interval: 700
@@ -114,13 +150,28 @@ Item {
     root.search = ""
     if (!modeReader.running) modeReader.running = true
     root.refreshDisplays()
+    root.refreshSystem()
     Qt.callLater(function() { keyReceiver.forceActiveFocus() })
   }
   function close() { root.opened = false }
   function navigate(section) {
     if (root.page !== section) { root.previousPage = root.page; root.page = section; content.contentY = 0 }
     if (section === "displays") root.refreshDisplays()
+    if (section === "system" || section === "devices" || section === "network") root.refreshSystem()
   }
+  function refreshSystem() {
+    if (!networkReader.running) networkReader.running = true
+    if (!wifiReader.running) wifiReader.running = true
+    if (!bluetoothReader.running) bluetoothReader.running = true
+    if (!cupsReader.running) cupsReader.running = true
+  }
+  function toggleWifi() { root.run("nmcli radio wifi toggle"); systemRefresh.restart() }
+  function toggleBluetooth() { root.run("bluetoothctl power toggle"); systemRefresh.restart() }
+  function openNetworkPanel() { root.close(); root.run("omarchy-shell shell summon omarchy.network") }
+  function openAudioPanel() { root.close(); root.run("omarchy-shell shell summon omarchy.audio") }
+  function openPowerPanel() { root.close(); root.run("omarchy-shell shell summon omarchy.power") }
+  function openPrinters() { if (root.cupsOn) root.run("xdg-open http://localhost:631") }
+  Timer { id: systemRefresh; interval: 900; onTriggered: root.refreshSystem() }
   function refreshDisplays() {
     if (displayReader.running) { root.displayRefreshPending = true; return }
     root.displayRefreshPending = false
@@ -238,15 +289,14 @@ Item {
           Repeater {
             model: [
               { id: "home", title: "Home", icon: "\uf015", color: "#0078d7" },
+              { id: "system", title: "System", icon: "\uf108", color: "#0078d7" },
+              { id: "devices", title: "Devices", icon: "\uf10a", color: "#0078d7" },
+              { id: "network", title: "Network & Internet", icon: "\uf1eb", color: "#0078d7" },
+              { id: "appearance", title: "Personalization", icon: "\uf042", color: "#0078d7" },
               { id: "accounts", title: "Accounts", icon: "\uf007", color: "#0078d7" },
               { id: "time", title: "Time & language", icon: "\uf017", color: "#0078d7" },
               { id: "privacy", title: "Privacy & security", icon: "\uf3ed", color: "#0078d7" },
-              { id: "update", title: "Update & security", icon: "\uf021", color: "#0078d7" },
-              { id: "appearance", title: "Personalization", icon: "\uf042", color: "#0078d7" },
-              { id: "dock", title: "Taskbar", icon: "\uf108", color: "#0078d7" },
-              { id: "displays", title: "Display", icon: "\uf109", color: "#0078d7" },
-              { id: "wallpaper", title: "Background", icon: "\uf03e", color: "#0078d7" },
-              { id: "desktop", title: "Multitasking", icon: "\uf00a", color: "#0078d7" }
+              { id: "update", title: "Update & security", icon: "\uf021", color: "#0078d7" }
             ]
             delegate: Rectangle {
               required property var modelData
@@ -377,6 +427,122 @@ Item {
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.navigate(modelData.target) }
                   }
                 }
+              }
+            }
+
+            Column {
+              width: parent.width; spacing: 18; visible: root.page === "system"
+              Label { x: 10; text: "System"; font.weight: Font.DemiBold; font.pixelSize: 13 }
+              Rectangle {
+                width: parent.width; height: 86; radius: 2; color: root.group
+                Label { x: 14; y: 14; text: "Display"; font.pixelSize: 13 }
+                Label {
+                  x: 14; y: 36; width: parent.width - 150
+                  text: root.focusedDisplay
+                    ? (root.focusedDisplay.internal ? "Built-in Display" : (root.focusedDisplay.description || root.focusedDisplay.name)) + "  ·  " + Math.round(root.focusedDisplay.width) + " × " + Math.round(root.focusedDisplay.height)
+                    : "Waiting for the display"
+                  color: root.secondary; font.pixelSize: 11; elide: Text.ElideRight
+                }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Display settings"; onClicked: root.navigate("displays") }
+              }
+              Rectangle {
+                width: parent.width; height: 56; radius: 2; color: root.group
+                Label { x: 14; y: 10; text: "Sound"; font.pixelSize: 13 }
+                Label { x: 14; y: 31; text: "Output, volume and applications"; color: root.secondary; font.pixelSize: 11 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Open"; onClicked: root.openAudioPanel() }
+              }
+              Rectangle {
+                width: parent.width; height: 56; radius: 2; color: root.group
+                Label { x: 14; y: 10; text: "Power & battery"; font.pixelSize: 13 }
+                Label { x: 14; y: 31; text: "Battery, power profiles and system information"; color: root.secondary; font.pixelSize: 11 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Open"; onClicked: root.openPowerPanel() }
+              }
+              Rectangle {
+                width: parent.width; height: 56; radius: 2; color: root.group
+                Label { x: 14; y: 10; text: "Notifications & actions"; font.pixelSize: 13 }
+                Label { x: 14; y: 31; text: "Notification history and Focus assist"; color: root.secondary; font.pixelSize: 11 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Open"; onClicked: { root.close(); root.run("omarchy-shell notifications showHistory") } }
+              }
+              Rectangle {
+                width: parent.width; height: 56; radius: 2; color: root.group
+                Label { x: 14; y: 10; text: "Multitasking"; font.pixelSize: 13 }
+                Label { x: 14; y: 31; text: "Workspaces and window layout"; color: root.secondary; font.pixelSize: 11 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Open"; onClicked: root.navigate("desktop") }
+              }
+              Rectangle {
+                width: parent.width; height: 56; radius: 2; color: root.group
+                Label { x: 14; y: 10; text: "About"; font.pixelSize: 13 }
+                Label { x: 14; y: 31; text: "Device name and Windows 10 theme details"; color: root.secondary; font.pixelSize: 11 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Open"; onClicked: { root.close(); root.run("omarchy-launch-about") } }
+              }
+            }
+
+            Column {
+              width: parent.width; spacing: 18; visible: root.page === "devices"
+              Label { x: 10; text: "Devices"; font.weight: Font.DemiBold; font.pixelSize: 13 }
+              Rectangle {
+                width: parent.width; height: 76; radius: 2; color: root.group
+                Label { x: 14; y: 14; text: "Bluetooth & other devices"; font.pixelSize: 13 }
+                Label { x: 14; y: 38; text: root.bluetoothOn ? "Bluetooth is on" : "Bluetooth is off"; color: root.secondary; font.pixelSize: 11 }
+                SmallButton {
+                  anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
+                  label: root.bluetoothOn ? "Turn off" : "Turn on"
+                  onClicked: root.toggleBluetooth()
+                }
+              }
+              Rectangle {
+                width: parent.width; height: 76; radius: 2; color: root.group
+                Label { x: 14; y: 14; text: "Printers & scanners"; font.pixelSize: 13 }
+                Label {
+                  x: 14; y: 38
+                  text: root.cupsOn ? "CUPS is running — manage printers in the web interface" : "CUPS is not running; no printers are available"
+                  color: root.secondary; font.pixelSize: 11
+                }
+                SmallButton {
+                  anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
+                  label: "Open"; enabled: root.cupsOn
+                  onClicked: root.openPrinters()
+                }
+              }
+              Label {
+                x: 10; width: parent.width - 20; wrapMode: Text.WordWrap
+                text: "Mouse, typing, pen and USB settings are provided by the hardware tools on this system; Windows-only device pages are omitted instead of being shown as dead controls."
+                color: root.secondary; font.pixelSize: 11
+              }
+            }
+
+            Column {
+              width: parent.width; spacing: 18; visible: root.page === "network"
+              Label { x: 10; text: "Network & Internet"; font.weight: Font.DemiBold; font.pixelSize: 13 }
+              Rectangle {
+                width: parent.width; height: 86; radius: 2; color: root.group
+                Label { x: 14; y: 14; text: "Status"; font.pixelSize: 13 }
+                Label {
+                  x: 14; y: 38; width: parent.width - 28
+                  text: root.wifiOn ? ("Wi-Fi is on" + (root.networkName ? "  ·  " + root.networkName : "")) : "Wi-Fi is off"
+                  color: root.secondary; font.pixelSize: 11; elide: Text.ElideRight
+                }
+                SmallButton {
+                  anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
+                  label: root.wifiOn ? "Turn off" : "Turn on"
+                  onClicked: root.toggleWifi()
+                }
+              }
+              Rectangle {
+                width: parent.width; height: 56; radius: 2; color: root.group
+                Label { x: 14; y: 10; text: "Network settings"; font.pixelSize: 13 }
+                Label { x: 14; y: 31; text: "Choose a network, VPN and connection details"; color: root.secondary; font.pixelSize: 11 }
+                SmallButton { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; label: "Open"; onClicked: root.openNetworkPanel() }
+              }
+              Rectangle {
+                width: parent.width; height: 56; radius: 2; color: root.group
+                Label { x: 14; y: 10; text: "Proxy"; font.pixelSize: 13 }
+                Label { x: 14; y: 31; text: "System proxy is managed by the desktop environment"; color: root.secondary; font.pixelSize: 11 }
+              }
+              Label {
+                x: 10; width: parent.width - 20; wrapMode: Text.WordWrap
+                text: "Wi-Fi state comes from NetworkManager and the connection name from the active nmcli connection."
+                color: root.secondary; font.pixelSize: 11
               }
             }
 

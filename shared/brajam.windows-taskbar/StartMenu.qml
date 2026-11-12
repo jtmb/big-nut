@@ -39,7 +39,7 @@ PopupWindow {
       if (players[i] && (players[i].trackTitle || players[i].isPlaying)) return players[i]
     return players.length > 0 ? players[0] : null
   }
-  readonly property var tileApps: root.buildTiles()
+  readonly property var tileGroups: root.buildTileGroups()
   readonly property string initial: (Quickshell.env("USER") || "U").charAt(0).toUpperCase()
 
   Process {
@@ -135,6 +135,22 @@ PopupWindow {
       out.push({ entry: entry, name: entry.name, color: root.tileColor(entry.id) })
     }
     return out
+  }
+  function buildTileGroups() {
+    var all = root.buildTiles()
+    var life = [], productivity = [], explore = []
+    for (var i = 0; i < all.length; i++) {
+      var tile = all[i]
+      var id = tile.entry ? String(tile.entry.id) : ""
+      if (tile.calendar || tile.weather || id === "org.gnome.Nautilus") life.push(tile)
+      else if (id === "libreoffice-writer" || id === "omawrite" || id === "omacalc") productivity.push(tile)
+      else explore.push(tile)
+    }
+    var groups = []
+    if (life.length) groups.push({ title: "Life at a glance", tiles: life })
+    if (productivity.length) groups.push({ title: "Productivity", tiles: productivity })
+    if (explore.length) groups.push({ title: "Explore", tiles: explore })
+    return groups
   }
   function tileColor(id) {
     switch (id) {
@@ -406,184 +422,139 @@ PopupWindow {
       }
     }
 
-    // Live tiles.
+    // Live tiles, grouped like Windows 10 Start.
     Item {
       id: tiles
       x: rail.width + 250
       width: parent.width - x
       height: parent.height
-      Text {
-        x: 16; y: 16
-        text: root.searchMode && root.query.length > 0 ? "" : "Life at a glance"
-        color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12; font.weight: Font.DemiBold
-      }
-      Grid {
+      visible: !(root.searchMode && root.query.length > 0)
+      Column {
         x: 16; y: 40
-        columns: 3
-        columnSpacing: 4
-        rowSpacing: 4
-        visible: !(root.searchMode && root.query.length > 0)
+        width: parent.width - 28
+        spacing: 14
         Repeater {
-          model: root.tileApps
-          delegate: Rectangle {
+          model: root.tileGroups
+          delegate: Column {
             required property var modelData
-            width: 100; height: 100
-            color: modelData.color
-            border.width: tileMouse.containsMouse ? 1 : 0
-            border.color: "#ffffff"
-            Image {
-              visible: modelData.media === true && root.mediaPlayer && String(root.mediaPlayer.trackArtUrl || "").length > 0
-              anchors.centerIn: parent
-              anchors.verticalCenterOffset: -14
-              width: 38; height: 38
-              source: root.mediaPlayer ? String(root.mediaPlayer.trackArtUrl || "") : ""
-              fillMode: Image.PreserveAspectCrop
-            }
+            width: parent.width
+            spacing: 4
             Text {
-              visible: modelData.media === true && !(root.mediaPlayer && String(root.mediaPlayer.trackArtUrl || "").length > 0)
-              anchors.centerIn: parent
-              anchors.verticalCenterOffset: -12
-              text: "\uf001"
-              color: "#ffffff"; font.family: "Font Awesome 7 Free Solid"; font.pixelSize: 28
+              text: modelData.title
+              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 12; font.weight: Font.DemiBold
             }
-            Text {
-              visible: modelData.media === true
-              x: 7; y: 58; width: parent.width - 14
-              text: root.mediaPlayer ? (root.mediaPlayer.trackTitle || "Media") : "Media"
-              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 10
-              elide: Text.ElideRight
-            }
-            Text {
-              visible: modelData.media === true
-              x: 7; y: 70; width: parent.width - 14
-              text: root.mediaPlayer ? (root.mediaPlayer.trackArtist || "") : ""
-              color: "#d8f0d8"; font.family: "Selawik"; font.pixelSize: 9
-              elide: Text.ElideRight
-            }
-            Text {
-              visible: modelData.calendar === true
-              anchors.horizontalCenter: parent.horizontalCenter
-              y: 16
-              text: Qt.formatDateTime(root.now, "ddd")
-              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 11
-            }
-            Text {
-              visible: modelData.calendar === true
-              anchors.horizontalCenter: parent.horizontalCenter
-              y: 32
-              text: Qt.formatDateTime(root.now, "d")
-              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 28; font.weight: Font.Light
-            }
-            Text {
-              visible: modelData.calendar === true
-              anchors.horizontalCenter: parent.horizontalCenter
-              y: 66
-              text: Qt.formatDateTime(root.now, "MMM")
-              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 10
-            }
-            Image {
-              visible: !modelData.weather && !modelData.calendar && !modelData.media
-              anchors.centerIn: parent
-              anchors.verticalCenterOffset: -8
-              width: 34; height: 34
-              source: modelData.entry ? Quickshell.iconPath(modelData.entry.icon, true) : ""
-              fillMode: Image.PreserveAspectFit
-            }
-            Text {
-              visible: modelData.weather === true
-              anchors.horizontalCenter: parent.horizontalCenter
-              y: 22
-              text: root.weatherTemp || "—"
-              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 24; font.weight: Font.Light
-            }
-            Text {
-              visible: modelData.weather === true
-              anchors.horizontalCenter: parent.horizontalCenter
-              y: 52
-              width: parent.width - 14
-              text: root.weatherLocation || "Weather"
-              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 10
-              horizontalAlignment: Text.AlignHCenter
-              elide: Text.ElideRight
-            }
-            Text {
-              visible: modelData.media !== true
-              x: 7; y: parent.height - 22
-              width: parent.width - 14
-              text: modelData.name
-              color: "#ffffff"
-              font.family: "Selawik"; font.pixelSize: 10
-              elide: Text.ElideRight
-            }
-            MouseArea {
-              id: tileMouse
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                if (modelData.weather) root.weatherOpen = true
-                else if (modelData.calendar) root.calendarOpen = true
-                else if (modelData.media && root.mediaPlayer) root.mediaPlayer.togglePlaying()
-                else root.launchRequested(modelData.entry)
+            Grid {
+              columns: 3
+              columnSpacing: 4
+              rowSpacing: 4
+              Repeater {
+                model: modelData.tiles
+                delegate: Rectangle {
+                  required property var modelData
+                  width: 100; height: 100
+                  color: modelData.color
+                  border.width: tileMouse.containsMouse ? 1 : 0
+                  border.color: "#ffffff"
+                  Image {
+                    visible: modelData.media === true && root.mediaPlayer && String(root.mediaPlayer.trackArtUrl || "").length > 0
+                    anchors.centerIn: parent
+                    anchors.verticalCenterOffset: -14
+                    width: 38; height: 38
+                    source: root.mediaPlayer ? String(root.mediaPlayer.trackArtUrl || "") : ""
+                    fillMode: Image.PreserveAspectCrop
+                  }
+                  Text {
+                    visible: modelData.media === true && !(root.mediaPlayer && String(root.mediaPlayer.trackArtUrl || "").length > 0)
+                    anchors.centerIn: parent
+                    anchors.verticalCenterOffset: -12
+                    text: "\uf001"
+                    color: "#ffffff"; font.family: "Font Awesome 7 Free Solid"; font.pixelSize: 28
+                  }
+                  Text {
+                    visible: modelData.media === true
+                    x: 7; y: 58; width: parent.width - 14
+                    text: root.mediaPlayer ? (root.mediaPlayer.trackTitle || "Media") : "Media"
+                    color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 10
+                    elide: Text.ElideRight
+                  }
+                  Text {
+                    visible: modelData.media === true
+                    x: 7; y: 70; width: parent.width - 14
+                    text: root.mediaPlayer ? (root.mediaPlayer.trackArtist || "") : ""
+                    color: "#d8f0d8"; font.family: "Selawik"; font.pixelSize: 9
+                    elide: Text.ElideRight
+                  }
+                  Text {
+                    visible: modelData.calendar === true
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: 16
+                    text: Qt.formatDateTime(root.now, "ddd")
+                    color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 11
+                  }
+                  Text {
+                    visible: modelData.calendar === true
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: 32
+                    text: Qt.formatDateTime(root.now, "d")
+                    color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 28; font.weight: Font.Light
+                  }
+                  Text {
+                    visible: modelData.calendar === true
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: 66
+                    text: Qt.formatDateTime(root.now, "MMM")
+                    color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 10
+                  }
+                  Image {
+                    visible: !modelData.weather && !modelData.calendar && !modelData.media
+                    anchors.centerIn: parent
+                    anchors.verticalCenterOffset: -8
+                    width: 34; height: 34
+                    source: modelData.entry ? Quickshell.iconPath(modelData.entry.icon, true) : ""
+                    fillMode: Image.PreserveAspectFit
+                  }
+                  Text {
+                    visible: modelData.weather === true
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: 22
+                    text: root.weatherTemp || "—"
+                    color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 24; font.weight: Font.Light
+                  }
+                  Text {
+                    visible: modelData.weather === true
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: 52
+                    width: parent.width - 14
+                    text: root.weatherLocation || "Weather"
+                    color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 10
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
+                  }
+                  Text {
+                    visible: modelData.media !== true
+                    x: 7; y: parent.height - 22
+                    width: parent.width - 14
+                    text: modelData.name
+                    color: "#ffffff"
+                    font.family: "Selawik"; font.pixelSize: 10
+                    elide: Text.ElideRight
+                  }
+                  MouseArea {
+                    id: tileMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                      if (modelData.weather) root.weatherOpen = true
+                      else if (modelData.calendar) root.calendarOpen = true
+                      else if (modelData.media && root.mediaPlayer) root.mediaPlayer.togglePlaying()
+                      else root.launchRequested(modelData.entry)
+                    }
+                  }
+                }
               }
             }
           }
-        }
-      }
-      Rectangle {
-        visible: root.calendarOpen
-        x: 16; y: 40
-        width: 300; height: 296
-        color: "#1f1f1f"
-        border.width: 1; border.color: "#4d4d4d"
-        Text {
-          x: 16; y: 12
-          text: Qt.formatDateTime(root.now, "MMMM yyyy")
-          color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 14; font.weight: Font.DemiBold
-        }
-        Row {
-          x: 16; y: 40; spacing: 0
-          Repeater {
-            model: ["S", "M", "T", "W", "T", "F", "S"]
-            delegate: Text {
-              required property string modelData
-              width: 36; height: 22
-              text: modelData
-              color: "#9a9a9a"; font.family: "Selawik"; font.pixelSize: 10
-              horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-            }
-          }
-        }
-        Grid {
-          x: 16; y: 64
-          columns: 7
-          Repeater {
-            model: root.calendarCells()
-            delegate: Text {
-              required property int index
-              required property var modelData
-              width: 36; height: 28
-              text: modelData > 0 ? String(modelData) : ""
-              color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 11
-              horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-            }
-          }
-        }
-        Rectangle {
-          anchors.left: parent.left; anchors.leftMargin: 16; y: parent.height - 40
-          width: 80; height: 27
-          color: todayMouse.containsMouse ? "#3f3f3f" : "#2b2b2b"
-          border.width: 1; border.color: "#4d4d4d"
-          Text { anchors.centerIn: parent; text: "Today"; color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 11 }
-          MouseArea { id: todayMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.now = new Date() }
-        }
-        Rectangle {
-          anchors.right: parent.right; anchors.rightMargin: 16; y: parent.height - 40
-          width: 70; height: 27
-          color: closeCalMouse.containsMouse ? "#3f3f3f" : "#2b2b2b"
-          border.width: 1; border.color: "#4d4d4d"
-          Text { anchors.centerIn: parent; text: "Close"; color: "#ffffff"; font.family: "Selawik"; font.pixelSize: 11 }
-          MouseArea { id: closeCalMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.calendarOpen = false }
         }
       }
       Rectangle {

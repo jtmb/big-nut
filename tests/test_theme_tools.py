@@ -344,14 +344,20 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn('"weather", "status"', start)
         self.assertIn("weatherOpen", start)
         self.assertIn("calendarCells", start)
+        self.assertIn("buildTileGroups", start)
+        self.assertIn('"Productivity"', start)
+        self.assertIn('"Explore"', start)
         self.assertIn("Mpris.players", start)
         self.assertIn("Now playing", start)
         self.assertIn("calendar: true", start)
         settings = (ROOT / "shared/brajam.windows-taskbar/WindowsSettings.qml").read_text()
         self.assertIn('id: "home"', settings)
         self.assertIn("Network & Internet", settings)
-        for page in ("accounts", "time", "privacy", "update"):
+        for page in ("system", "devices", "network", "accounts", "time", "privacy", "update"):
             self.assertIn('id: "' + page + '"', settings)
+        self.assertIn("nmcli radio wifi toggle", settings)
+        self.assertIn("bluetoothctl power toggle", settings)
+        self.assertIn("http://localhost:631", settings)
 
     def test_windows_theme_applies_taskbar_and_rolls_back(self):
         self.run_tool("ui-hook.py", "windows-10", theme=WINDOWS)

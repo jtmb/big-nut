@@ -22,9 +22,9 @@ default `#0078d7` accent.
 | Clock | two lines, time over date | two lines, `h:mm AP` over `M/d/yyyy` | `/tmp/opencode/final-desktop2-half.png` |
 | Start size | about 640×600 at 1080p | 640×600 | `/tmp/opencode/compare-start-final.png` |
 | Start palette | dark `#1f1f1f` by default | `#1f1f1f` with `#191919` rail | `start-recent-half.png` |
-| Start content | Recently added, All apps, tiles, rail, power | Recently added, All apps, tiles, rail, power | `start-recent-half.png` |
+| Start content | Recently added, All apps, grouped tiles, rail, power | Recently added, All apps, grouped tiles (Life at a glance, Productivity, Explore), rail, power | `/tmp/opencode/compare-start-grouped.png` |
 | Titlebar | 30px white bar, square caption buttons, red `#e81123` close hover | 30px white bar, left-aligned Selawik title, square buttons, red close hover; GTK3 SSD apps match, GTK4 CSD apps keep one app-drawn header | `/tmp/opencode/compare-titlebar-gtk.png` |
-| Settings | light page, `#f2f2f2` nav, `#0078d7` accent | same palette; Home/Accounts/Time/Privacy/Update plus the existing pages | `/tmp/opencode/compare-settings-final.png` |
+| Settings | Home, System, Devices, Network & Internet, Personalization, Accounts, Time & language, Privacy & security, Update & security | same sidebar order and working pages | `/tmp/opencode/compare-settings-new.png` |
 | Action center | dark flyout, notifications above a 4-column quick-action grid | same structure; up to six live/history notifications, 4-column grid, active tiles blue | `/tmp/opencode/compare-action-dark3.png` |
 | Jump list | taskbar app context menu with recent files | right-click/`jump <id>` menu with Open, Pin/Unpin, Close all and recent documents from the XDG recent store | `/tmp/opencode/jump-final-half.png` |
 | Live tiles | Calendar, Weather and media update | Calendar shows the live date; Weather refreshes every 15 minutes; a Now Playing tile follows MPRIS players | `/tmp/opencode/start-final2.png` |
@@ -57,9 +57,9 @@ Live checks: `plugin:winbars:enabled` → true, `bar_height` → 30,
 
 ## Side-by-side comparisons
 
-- Taskbar/desktop: `/tmp/opencode/compare-taskbar-final2.png` (same black-taskbar layout; the reference uses a black wallpaper and the 1607 search placeholder)
-- Start (like-for-like dark): `/tmp/opencode/compare-start-final.png`
-- Settings: `/tmp/opencode/compare-settings-final.png`
+- Taskbar/desktop: `/tmp/opencode/compare-taskbar-final3.png` (same black-taskbar layout; the reference uses a black wallpaper and the 1607 search placeholder)
+- Start (like-for-like dark, grouped tiles): `/tmp/opencode/compare-start-grouped.png`
+- Settings: `/tmp/opencode/compare-settings-new.png`
 - Action center (like-for-like dark): `/tmp/opencode/compare-action-dark3.png`
 - Titlebar on a GTK app + close hover: `/tmp/opencode/compare-titlebar-gtk.png`
 - Titlebar default-white reference: `/tmp/opencode/compare-titlebar-default.png`
@@ -71,14 +71,17 @@ The taskbar, Start and action-center comparisons use dark Windows mode reference
 - The action center shows up to six recent live/history entries; clicking one
   opens Omarchy's full notification history rather than a Windows notification
   database view.
-- Calendar, Weather and MPRIS Now Playing tiles are live. Other tiles are
-  static because their feeds are application-owned. Jump lists include recent
+- Calendar, Weather and MPRIS Now Playing tiles are live and grouped as
+  Life at a glance, Productivity and Explore. Other tiles are static because
+  their feeds are application-owned. Jump lists include recent
   XDG documents. The live store was populated by opening a real document in
   LibreOffice Writer and verified through the jump-list Recent row.
-- Settings provides Home, Accounts, Time & language, Privacy & security,
-  Update & security, Personalization, Taskbar, Display, Background and
-  Multitasking pages. The actions behind the new categories are real Omarchy
-  commands or panels, not Windows services.
+- Settings provides the Windows 10 sidebar order: Home, System, Devices,
+  Network & Internet, Personalization, Accounts, Time & language,
+  Privacy & security, Update & security. System links to Display, Sound,
+  Power & battery, Notifications and Multitasking; Devices reads Bluetooth and
+  CUPS state; Network & Internet reads NetworkManager state. Actions are real
+  Omarchy/NetworkManager/CUPS commands, not Windows services.
 - GTK4/libadwaita apps (Nautilus, Evince, Pinta) always draw their own header
   bars even with `GTK_CSD=0`; the theme suppresses its own bar for those classes
   so there is one header, but it is the app's header rather than a Windows one.

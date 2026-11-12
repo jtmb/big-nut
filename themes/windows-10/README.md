@@ -16,7 +16,8 @@ metric-compatible Segoe UI substitute.
   apps on the left) and `brajam.windows-clock` (two-line clock, action center,
   Show desktop strip on the right), plus Omarchy's tray, network, volume and
   battery widgets.
-- Start menu: dark Windows 10 rail, all-apps list, live tiles, power menu.
+- Start menu: dark Windows 10 rail, all-apps list, grouped live tiles
+  (Life at a glance, Productivity, Explore), power menu.
 - Colors: white app surfaces, black window text, `#0078d7` accent, square
   corners, opaque windows and a 1px accent border.
 - Wallpaper: `backgrounds/1-windows-10-blue.webp`, an original blue pane
@@ -72,8 +73,9 @@ Windows 10 at 100% scale. Applications still draw their own client-area chrome
 and menus. GTK3 apps with xdg-decoration support use the Windows caption bar;
 GTK4/libadwaita apps keep one app-drawn header bar because they cannot be
 forced into server-side decorations. Start's Settings button opens
-the Windows Settings window (Personalization, Taskbar, Display, Background and
-Multitasking), and the action center has a working quick-actions flyout. The
+the Windows Settings window (Home, System, Devices, Network & Internet,
+Personalization, Accounts, Time & language, Privacy & security and
+Update & security), and the action center has a working quick-actions flyout. The
 reference screenshots used while building this were the
 Wikimedia Commons Windows 10 taskbar and Start menu captures, the Windows 10
 Settings scale and layout capture, and Microsoft's Windows app title bar design
