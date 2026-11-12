@@ -17,6 +17,9 @@ FONTS = Path.home() / ".local/share/fonts/selawik"
 THEME_DIR = Path(__file__).resolve().parent
 TITLEBARS = Path.home() / ".local/share/windows-10-titlebars/titlebars.so"
 ENV_DROPIN = Path.home() / ".config/environment.d/90-windows-10.conf"
+ENV_STATE = Path.home() / ".local/state/omarchy/windows-10-env.json"
+SHIM = Path.home() / ".local/share/windows-10-titlebars/libtitleleft.so"
+ENV_MARKER = "# managed by the windows-10 theme"
 GTK_SOURCE = THEME_DIR / "gtk"
 GTK_STATE = Path.home() / ".local/state/omarchy/windows-10-gtk.json"
 GTK_FILES = (
@@ -131,25 +134,96 @@ def remove_gtk_style():
     GTK_STATE.unlink()
 
 
+def install_title_shim():
+    """Build the title-left shim loaded into GTK apps with LD_PRELOAD."""
+    if os.environ.get("WINDOWS10_SKIP_SHIM"):
+        return
+    source = THEME_DIR / "gtk/title-left-shim.c"
+    build = THEME_DIR / "gtk/build-shim.sh"
+    if not source.is_file() or not build.is_file():
+        return
+    if SHIM.is_file() and SHIM.stat().st_mtime >= source.stat().st_mtime:
+        return
+    if not shutil.which("cc"):
+        return
+    subprocess.run(["bash", str(build), str(SHIM)], check=False,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def systemd_environment(name):
+    if os.environ.get("WINDOWS10_SKIP_ENV"):
+        return ""
+    result = subprocess.run(["systemctl", "--user", "show-environment"],
+                            check=False, capture_output=True, text=True)
+    prefix = name + "="
+    for line in result.stdout.splitlines():
+        if line.startswith(prefix):
+            return line[len(prefix):]
+    return ""
+
+
 def install_gtk_environment():
-    """Ask GTK apps for server-side decorations; ignored by GTK4/libadwaita."""
+    """Ask GTK apps for server-side decorations and left-aligned titles."""
     if os.environ.get("WINDOWS10_SKIP_ENV"):
         return
+    state = {}
+    if ENV_STATE.is_file():
+        try:
+            state = json.loads(ENV_STATE.read_text())
+        except (OSError, ValueError):
+            state = {}
+    if not state:
+        original = None
+        if ENV_DROPIN.is_file():
+            current = ENV_DROPIN.read_text()
+            if not current.lstrip().startswith(ENV_MARKER):
+                original = current
+        state = {
+            "dropin": original,
+            "gtk_csd": systemd_environment("GTK_CSD"),
+            "ld_preload": systemd_environment("LD_PRELOAD"),
+        }
+    lines = [ENV_MARKER, "GTK_CSD=0"]
+    preload = ""
+    if SHIM.is_file():
+        preload = str(SHIM)
+        if state.get("ld_preload"):
+            preload += ":" + state["ld_preload"]
+        lines.append("LD_PRELOAD=" + preload)
     ENV_DROPIN.parent.mkdir(parents=True, exist_ok=True)
-    text = "GTK_CSD=0\n"
-    if not ENV_DROPIN.is_file() or ENV_DROPIN.read_text() != text:
-        ENV_DROPIN.write_text(text)
+    ENV_DROPIN.write_text("\n".join(lines) + "\n")
     subprocess.run(["systemctl", "--user", "set-environment", "GTK_CSD=0"],
                    check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if preload:
+        subprocess.run(["systemctl", "--user", "set-environment", "LD_PRELOAD=" + preload],
+                       check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    save(ENV_STATE, state)
 
 
 def remove_gtk_environment():
     if os.environ.get("WINDOWS10_SKIP_ENV"):
         return
-    if ENV_DROPIN.is_file():
-        ENV_DROPIN.unlink()
-    subprocess.run(["systemctl", "--user", "unset-environment", "GTK_CSD"],
-                   check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    state = {}
+    if ENV_STATE.is_file():
+        try:
+            state = json.loads(ENV_STATE.read_text())
+        except (OSError, ValueError):
+            state = {}
+    original = state.get("dropin")
+    if original is None:
+        ENV_DROPIN.unlink(missing_ok=True)
+    else:
+        ENV_DROPIN.parent.mkdir(parents=True, exist_ok=True)
+        ENV_DROPIN.write_text(original)
+    for name, previous in (("GTK_CSD", state.get("gtk_csd")),
+                           ("LD_PRELOAD", state.get("ld_preload"))):
+        if previous:
+            subprocess.run(["systemctl", "--user", "set-environment", f"{name}={previous}"],
+                           check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            subprocess.run(["systemctl", "--user", "unset-environment", name],
+                           check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    ENV_STATE.unlink(missing_ok=True)
 
 
 def install_titlebars():
@@ -174,6 +248,7 @@ def apply(config):
     before = snapshot(config)
     install_fonts()
     install_gtk_style()
+    install_title_shim()
     install_gtk_environment()
     install_titlebars()
 
@@ -259,6 +334,7 @@ def main():
         if STATE.is_file():
             install_fonts()
             install_gtk_style()
+            install_title_shim()
             install_gtk_environment()
             install_titlebars()
             state = json.loads(STATE.read_text())

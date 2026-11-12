@@ -51,6 +51,13 @@ local data_home = os.getenv("XDG_DATA_HOME")
 if not data_home or data_home == "" then
   data_home = (os.getenv("HOME") or "") .. "/.local/share"
 end
+local shim = data_home .. "/windows-10-titlebars/libtitleleft.so"
+local shim_file = io.open(shim, "r")
+if shim_file then
+  shim_file:close()
+  hl.env("LD_PRELOAD", shim)
+end
+
 local custom = data_home .. "/windows-10-titlebars/titlebars.so"
 local custom_file = io.open(custom, "r")
 if custom_file then

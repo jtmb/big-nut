@@ -55,7 +55,7 @@ class ThemeToolsTest(unittest.TestCase):
         systemctl.write_text("#!/bin/sh\nexit 0\n")
         systemctl.chmod(0o755)
         self.env = dict(os.environ, HOME=str(self.home), XDG_STATE_HOME=str(self.home / ".local/state"), OMARCHY_PATH="/usr/share/omarchy",
-                        WINDOWS10_SKIP_TITLEBARS="1", WINDOWS10_SKIP_GTK_GSETTINGS="1",
+                        WINDOWS10_SKIP_TITLEBARS="1", WINDOWS10_SKIP_GTK_GSETTINGS="1", WINDOWS10_SKIP_SHIM="1",
                         PATH=str(stub.parent) + os.pathsep + os.environ["PATH"])
 
     def read_config(self):
@@ -416,7 +416,7 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertEqual(config["windowsTaskbar"]["pinned"],
                          ["org.gnome.Nautilus", "chromium", "foot", "libreoffice-writer"])
         env_file = self.home / ".config/environment.d/90-windows-10.conf"
-        self.assertEqual(env_file.read_text(), "GTK_CSD=0\n")
+        self.assertIn("GTK_CSD=0", env_file.read_text())
         self.assertIn("Windows 10 look", (self.home / ".config/gtk-3.0/gtk.css").read_text())
         self.assertIn("Windows 10 look", (self.home / ".config/gtk-4.0/gtk.css").read_text())
         self.assertIn("gtk-decoration-layout=menu:minimize,maximize,close",
@@ -426,6 +426,14 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertIn("windowcontrols > button > image", css)
         self.assertIn("#e81123", css)
         self.assertIn("Selawik", css)
+        shim = (WINDOWS / "gtk/title-left-shim.c").read_text()
+        self.assertIn("hdy_header_bar_pack_start", shim)
+        self.assertIn("adw_header_bar_pack_start", shim)
+        self.assertIn("windows-title-left", shim)
+        self.assertTrue((WINDOWS / "gtk/build-shim.sh").is_file())
+        lua = (WINDOWS / "hyprland.lua").read_text()
+        self.assertIn("libtitleleft.so", lua)
+        self.assertIn('hl.env("LD_PRELOAD"', lua)
 
         self.run_tool("ui-hook.py", "gruvbox", theme=WINDOWS)
         after = self.read_config()
@@ -436,6 +444,7 @@ class ThemeToolsTest(unittest.TestCase):
         self.assertEqual((self.home / ".config/gtk-3.0/gtk.css").read_text(), "/* old gtk css */\n")
         self.assertIn("gtk-theme-name=Old", (self.home / ".config/gtk-3.0/settings.ini").read_text())
         self.assertFalse((self.home / ".local/state/omarchy/windows-10-gtk.json").exists())
+        self.assertFalse((self.home / ".local/state/omarchy/windows-10-env.json").exists())
 
     def test_dark_outline_setting_preserves_light_dock_and_pins(self):
         for action, expected in [("on", True), ("off", False)]:

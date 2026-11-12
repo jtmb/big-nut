@@ -36,9 +36,11 @@ metric-compatible Segoe UI substitute.
   and a settings file that make header bars white, square and Windows-ordered
   (min/max/close, Selawik), with the red close hover, including libadwaita's
   window controls. The hook installs and restores them, plus the matching
-  gsettings values. Those apps are still excluded from the server-side bar so
-  they never show two title bars. GTK title text remains app-positioned
-  (normally centred): `GtkCenterBox` has no CSS-reachable left slot.
+  gsettings values. `gtk/title-left-shim.c` is built into
+  `~/.local/share/windows-10-titlebars/libtitleleft.so` and loaded with
+  `LD_PRELOAD` to pack GTK/libadwaita title widgets and labels into the header
+  bar start slot, giving Windows-style left-aligned titles. Those apps are
+  still excluded from the server-side bar so they never show two title bars.
 
 ## Install and apply
 

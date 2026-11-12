@@ -23,7 +23,7 @@ default `#0078d7` accent.
 | Start size | about 640×600 at 1080p | 640×600 | `/tmp/opencode/compare-start-final.png` |
 | Start palette | dark `#1f1f1f` by default | `#1f1f1f` with `#191919` rail | `start-recent-half.png` |
 | Start content | Recently added, All apps, grouped medium/wide/large tiles, rail, power | Recently added, All apps, grouped medium/wide/large tiles (Life at a glance, Productivity, Explore), rail, power | `/tmp/opencode/compare-start-large.png` |
-| Titlebar | 30px white bar, square caption buttons, red `#e81123` close hover | 30px white bar, square buttons, red close hover on server-decorated windows; GTK and libadwaita apps adopt white bars, square min/max/close and red hover via CSS | `/tmp/opencode/compare-gtk-style2.png` |
+| Titlebar | 30px white bar, left title, square caption buttons, red `#e81123` close hover | 30px white bar, left title, square buttons, red close hover; GTK/libadwaita apps adopt white bars, square controls and left titles | `/tmp/opencode/compare-title-left.png` |
 | Settings | drop-down scale, text size, display resolution, orientation | drop-down scale, text size, resolution and orientation, brightness, Night Shift; same sidebar order | `/tmp/opencode/compare-settings-resolution.png` |
 | Action center | dark flyout, notification cards above a 4-column quick-action grid | live cards with real app icons/glyphs, summary, app, time, click-to-invoke, dismiss and Clear all; dismissed keys persist | `/tmp/opencode/compare-action-icons.png` |
 | Jump list | taskbar app context menu with recent files | right-click/`jump <id>` menu with Open, Pin/Unpin, Close all and recent documents from the XDG recent store | `/tmp/opencode/jump-final-half.png` |
@@ -36,9 +36,8 @@ theme. The hook installs them into `~/.config`, snapshots any previous files
 and gsettings values, and restores both on theme rollback. This gives standard
 GTK header bars a white Windows bar with min/max/close and the red close hover.
 libadwaita apps also get square min/max/close controls with the red close
-hover by styling `windowcontrols > button > image`. Their titles remain where
-the app places them, usually centred; see the title-alignment verification
-below.
+hover by styling `windowcontrols > button > image`. Their titles are moved into
+the header bar start slot by the title-left shim described below.
 
 The server-side title bars come from `themes/windows-10/titlebars/`, a fork of
 `omarchy-hyprland-titlebars` built against the live Hyprland headers. It adds
@@ -74,30 +73,39 @@ Live checks: `plugin:winbars:enabled` → true, `bar_height` → 30,
 - Settings: `/tmp/opencode/compare-settings-resolution.png`
 - Action center (like-for-like dark, real icons and clickable cards): `/tmp/opencode/compare-action-icons.png`
 - GTK app styling: `/tmp/opencode/compare-gtk-style2.png`
+- Left-aligned GTK/libadwaita titles: `/tmp/opencode/compare-title-left.png`
 - Title alignment attempts: `/tmp/opencode/compare-title-alignment.png`
 - Titlebar on a GTK SSD app + close hover: `/tmp/opencode/compare-titlebar-gtk.png`
 - Titlebar default-white reference: `/tmp/opencode/compare-titlebar-default.png`
 
 The taskbar, Start and action-center comparisons use dark Windows mode references with black surfaces, matching Big Nut's defaults. The wallpaper in the full desktop capture is an original drawing, so the taskbar strip comparison is the like-for-like surface comparison. The titlebar comparison uses a Windows 10 About dialog with a default white titlebar; it has one close button because dialogs do not show minimize/maximize. The accent-colored Settings capture documents the reference's custom accent, not Big Nut's palette.
 
-## Title alignment verification
+## Left-aligned titles
 
-Windows 10 left-aligns the window title. GTK header bars place the title in the
-centre slot of a `GtkCenterBox`, and libadwaita/handy title bars do the same.
-CSS has no layout or reparenting property for that slot, so four targeted
-attempts were tested against Evince and all left the title centred:
+GTK header bars place their title in the centre slot of a `GtkCenterBox`, which
+CSS cannot move. The theme therefore builds `gtk/title-left-shim.c` with
+`gtk/build-shim.sh` into
+`~/.local/share/windows-10-titlebars/libtitleleft.so` and loads it with
+`LD_PRELOAD` (Hyprland `hl.env`, `environment.d` and the systemd user
+environment).
 
-- `headerbar .title { margin-right: 150px; }`
-- `headerbar .title { min-width: 100%; text-align: left; }`
-- `windowtitle { min-width: 100%; text-align: left; }`
-- `headerbar .title, windowtitle { transform: translateX(-300px); }`
+The shim wraps the GTK3, GTK4, libadwaita and libhandy title setters:
 
-Evidence `/tmp/opencode/compare-title-alignment.png` shows the Windows
-reference and each attempt. GTK Inspector confirms Evince's title bar is the
-app-provided `HdyDeck` / `HdyNothing` titlebar (`/tmp/opencode/inspector-tree.png`),
-not a plain `GtkHeaderBar`. Moving the title to the left edge needs the app or
-toolkit to pack it in the header bar's start slot; a theme stylesheet cannot do
-it. The title therefore remains app-positioned, normally centred.
+- custom title widgets (`set_title_widget` / `set_custom_title`) are detached
+  from the centre slot and packed into the header bar start slot;
+- string titles are cleared from the centred label and shown in a start-packed
+  label that updates when the app changes its title.
+
+Verified live:
+
+- **Evince** — `manual.pdf` sits at the left edge after the toolbar buttons.
+- **Nautilus** — the path bar sits at the left, with app and window controls at
+  the right.
+- **Nautilus close hover** — square `#e81123` fill with a white glyph.
+
+Evidence `/tmp/opencode/compare-title-left.png`. No `Adwaita-CRITICAL` or
+packing warnings appeared in the app logs. Apps that do not use these header
+bars are unaffected.
 
 ## Intentional deviations
 
@@ -123,11 +131,10 @@ it. The title therefore remains app-positioned, normally centred.
 - GTK4/libadwaita apps (Nautilus, Evince, Pinta) draw their own header bars.
   The GTK CSS turns standard GTK header bars white with Windows min/max/close
   and red close hover (Evince). libadwaita's window controls are made square
-  with the same hover by styling `windowcontrols > button > image`. The title
-  still sits where the app places it (normally centred) because `GtkCenterBox`
-  provides no CSS-reachable left slot; this was verified with four CSS attempts
-  and GTK Inspector. The plugin's own bar is suppressed for those classes so
-  there is never a duplicate title bar. GTK3 apps that honour xdg-decoration
+  with the same hover by styling `windowcontrols > button > image`. Titles are
+  moved to the header bar start slot by the `LD_PRELOAD` shim, so they sit at
+  the left like Windows 10. The plugin's own bar is suppressed for those
+  classes so there is never a duplicate title bar. GTK3 apps that honour xdg-decoration
   (gcr-viewer) get the server-side Windows bar.
 - Jump-list Recent rows are live: the helper reads the real XDG recent store.
   The LO Writer row was verified with `~/Documents/Windows 10 notes.txt`.
